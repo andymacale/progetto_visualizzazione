@@ -11,8 +11,18 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "chart.js": "^4.5.1",
+    "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "pg": "^8.20.0"
-  }
+    "pg": "^8.21.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/andymacale/progetto_visualizzazione.git"
+  },
+  "bugs": {
+    "url": "https://github.com/andymacale/progetto_visualizzazione/issues"
+  },
+  "homepage": "https://github.com/andymacale/progetto_visualizzazione#readme"
 }

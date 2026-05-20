@@ -2,13 +2,108 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <title>Visualizzazione Dati</title>
+    <title>Visualizzazione Dati - Gestione Ospedale</title>
+    <link rel="icon" type="image/png" href="/img/logo.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
-    <h1>Informazioni dal Database</h1>
-    <div id="contenitore-dati">Caricamento in corso...</div>
+    <header>
+        <h1 class="start">Gestione dell'ospedale</h1>
+    </header>
 
+    <div id="flex-opzioni">
+        <div class="opzioni" id="btn-posti">
+            <img class="opzioni" src="/img/posti.png" alt="Posti Letto"/> 
+        </div>
+        <div class="opzioni" id="btn-medicinali">
+            <img class="opzioni" src="/img/medicinali.png" alt="Medicinali"/>
+        </div>
+    </div>
+        
+    <div id="sezione-split" class="nascosto">
+        
+        <div class="colonna-form">
+            
+            <div id="form-posti" class="blocco-dinamico">
+                <h3>Analisi Ricoveri Stagionali</h3>
+                
+                <div class="campo-input">
+                    <label for="menu-reparti">Seleziona Reparto:</label>
+                    <select id="menu-reparti">
+                        <option value="" selected>Tutti i reparti (Caricamento...)</option>
+                    </select>
+                </div>
+
+                <div class="campo-input">
+                    <label for="data-inizio">Mese/Anno Inizio:</label>
+                    <input type="month" id="data-inizio">
+                </div>
+
+                <div class="campo-input">
+                    <label for="data-fine">Mese/Anno Fine:</label>
+                    <input type="month" id="data-fine">
+                </div>
+
+                <div class="campo-input">
+                    <label for="nome-diagnosi">Diagnosi Principale:</label>
+                    <input type="text" id="nome-diagnosi" placeholder="Es. COVID-19, Polmonite...">
+                </div>
+            </div>
+
+            <div id="form-medicinali" class="blocco-dinamico">
+                <h3>Filtro Medicinali</h3>
+                <div class="campo-input">
+                    <label for="nome-farmaco">Nome Farmaco:</label>
+                    <input type="text" id="nome-farmaco" placeholder="Es. Paracetamolo...">
+                </div>
+                <div class="campo-input">
+                    <label for="quantita">Scorta Minima:</label>
+                    <input type="number" id="quantita" min="0" value="0">
+                </div>
+            </div>
+
+        </div>
+
+        <div class="colonna-risultati">
+            <div id="risultati-posti" class="blocco-dinamico">
+                <h2>Calendario Ricoveri Stagionali</h2>
+                
+                <div id="contenitore-calendario" style="min-height: 400px; width: 100%; background: #f8f9fa; padding: 15px; border-radius: 8px; box-shadow: inset 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 25px;">
+                    <div id="messaggio-iniziale" style="text-align:center; padding: 50px; color: #666;">
+                        Seleziona i filtri per generare il calendario.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+            <div id="risultati-medicinali" class="blocco-dinamico">
+                <h2>Scorte Farmacia Live</h2>
+                <div class="tabella-responsiva">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Farmaco</th>
+                                <th>Quantità Disponibile</th>
+                            </tr>
+                        </thead>
+                        <tbody id="corpo-tabella-medicinali">
+                            <tr>
+                                <td colspan="2" class="tabella-vuota">Seleziona i filtri dei medicinali per vedere le scorte.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <script src="/js/spinner.js"></script>
     <script src="/js/app.js"></script>
 </body>
 </html>
