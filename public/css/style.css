@@ -21,28 +21,106 @@ h1.start {
     font-size: 36px; 
 }
 
-img.opzioni {
-    height: 100%;
-    width: 100%;
-    object-fit: cover; 
-}
-
+/* =========================================
+   STATO 1: INIZIALE (BOTTONI GIGANTI)
+   ========================================= */
 #flex-opzioni {
-  margin: 40px 20px; 
-  display: flex;
-  justify-content: space-around;
-  height: 300px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background-color: #f0f0f0;
+    padding: 10vh 20px; 
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    box-sizing: border-box;
+    
+    /* OTTIMIZZATO: Transizione fulminea (0.4s) e solo su proprietà specifiche */
+    transition: padding 0.4s cubic-bezier(0.16, 1, 0.3, 1), gap 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease; 
+    
+    /* Avvisa la scheda video di tenersi pronta a muovere questo blocco */
+    will-change: padding, gap; 
 }
 
 div.opzioni {
     cursor: pointer;
-    transition: all 0.3s ease; /
+    width: 250px;  
+    height: 250px;
+    background-color: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    padding: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    
+    /* OTTIMIZZATO: Niente più 'transition: all' */
+    transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1), height 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease, box-shadow 0.3s ease;
+    
+    /* Forza il rendering hardware su scheda grafica */
+    will-change: width, height; 
+}
+
+img.opzioni {
+    height: 100%;
+    width: auto;
+    object-fit: contain; 
 }
 
 div.opzioni.selezionato {
-    border-color: #007BFF; 
-    box-shadow: 0 0 15px rgba(0, 123, 255, 0.4); 
-    transform: scale(1.05); 
+    border-color: #007BFF;
+    box-shadow: 0 0 20px rgba(0, 123, 255, 0.4);
+    transform: scale(1.05);
+}
+
+#flex-opzioni.compatto {
+    padding: 15px 20px;
+    justify-content: center;
+    gap: 40px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+}
+
+#flex-opzioni.compatto div.opzioni {
+    width: 80px;   
+    height: 80px;
+    padding: 12px;
+    border-radius: 12px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+#sezione-split {
+    display: flex;
+    margin: 20px 40px;
+    gap: 30px;
+}
+
+@keyframes scivolaSu {
+    0% { 
+        opacity: 0; 
+        transform: translateY(40px);
+    }
+    100% { 
+        opacity: 1; 
+        transform: translateY(0); 
+    }
+}
+
+#sezione-split:not(.nascosto) {
+    animation: scivolaSu 0.7s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+}
+
+.colonna-form {
+    flex: 0 0 25%;
+    background-color: #ffffff;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    box-sizing: border-box;
+    position: sticky;
+    top: 120px;              
+    align-self: flex-start; 
+    height: fit-content;     
+    z-index: 10;            
 }
 
 .nascosto {
@@ -70,12 +148,6 @@ li {
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-div.opzioni.selezionato {
-    border-color: #007BFF;
-    box-shadow: 0 0 20px rgba(0, 123, 255, 0.4);
-    transform: scale(1.03);
-}
-
 #sezione-split {
     display: flex;
     margin: 20px 40px;
@@ -89,6 +161,11 @@ div.opzioni.selezionato {
     border-radius: 12px;
     box-shadow: 0 4px 10px rgba(0,0,0,0.05);
     box-sizing: border-box;
+    position: sticky;
+    top: 150px;              /* FONDAMENTALE: Aumentato da 20px a 150px! */
+    align-self: flex-start; 
+    height: fit-content;     
+    z-index: 10;            
 }
 
 .colonna-risultati {

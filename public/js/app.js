@@ -37,17 +37,23 @@ async function caricaReparti() {
 }
 caricaReparti();
 
+const flexOpzioni = document.getElementById('flex-opzioni');
+
 function commutaVisualizzazione(tipo) {
     if (sezioneAttiva === tipo) {
         sezioneSplit.classList.add('nascosto');
         btnPosti.classList.remove('selezionato');
         btnMedicinali.classList.remove('selezionato');
         sezioneAttiva = null;
+        
+        flexOpzioni.classList.remove('compatto'); 
         return;
     }
 
     sezioneAttiva = tipo;
     sezioneSplit.classList.remove('nascosto');
+    
+    flexOpzioni.classList.add('compatto'); 
 
     if (tipo === 'posti') {
         btnPosti.classList.add('selezionato');
@@ -58,7 +64,9 @@ function commutaVisualizzazione(tipo) {
         formMedicinali.style.display = 'none';
         risMedicinali.style.display = 'none';
 
-        ricaricaDati('posti');
+        setTimeout(() => {
+            ricaricaDati('posti');
+        }, 400);
 
     } else if (tipo === 'medicinali') {
         btnMedicinali.classList.add('selezionato');
