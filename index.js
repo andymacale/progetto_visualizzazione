@@ -53,20 +53,27 @@ app.get('/api/reparti', async (req, res) => {
 app.get('/api/analisi-stagionale', async (req, res) => {
     const dataInizio = req.query.dataInizio || null;
     const dataFine = req.query.dataFine || null;
-    const diagnosi = req.query.diagnosi ? `%${req.query.diagnosi}%` : null;
-    const reparto = req.query.reparto || null; 
     
-    const page = parseInt(req.query.page) || 0;
-    const offset = page * 50; 
+    // 1. DIAGNOSI MULTIPLE: Forza Express a trattarlo come un array
+    let diagnosi = req.query.diagnosi || null;
+    if (diagnosi) {
+        if (!Array.isArray(diagnosi)) diagnosi = [diagnosi];
+        // Trasformiamo ogni tag inserito in %nome_malattia% per la ricerca parziale SQL
+        diagnosi = diagnosi.map(d => `%${d}%`);
+    }
+    
+    // 2. REPARTI MULTIPLI: Rimane invariato, già configurato come array
+    let reparto = req.query.reparto || null;
+    if (reparto && !Array.isArray(reparto)) reparto = [reparto];
 
     try {
         const result = await pool.query(queryAnalisiStagionale, [
-            dataInizio, 
-            dataFine, 
-            diagnosi,
-            reparto,
-            offset 
+            dataInizio,  // $1
+            dataFine,    // $2
+            diagnosi,    // $3 (Varchar)
+            reparto      // $4 (Varchar[] - Array)
         ]);
+        
         res.json(result.rows);
     } catch (err) {
         console.error("Errore query analisi stagionale:", err);

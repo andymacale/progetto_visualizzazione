@@ -21,9 +21,7 @@ h1.start {
     font-size: 36px; 
 }
 
-/* =========================================
-   STATO 1: INIZIALE (BOTTONI GIGANTI)
-   ========================================= */
+
 #flex-opzioni {
     position: sticky;
     top: 0;
@@ -35,10 +33,8 @@ h1.start {
     align-items: center;
     box-sizing: border-box;
     
-    /* OTTIMIZZATO: Transizione fulminea (0.4s) e solo su proprietà specifiche */
     transition: padding 0.4s cubic-bezier(0.16, 1, 0.3, 1), gap 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease; 
     
-    /* Avvisa la scheda video di tenersi pronta a muovere questo blocco */
     will-change: padding, gap; 
 }
 
@@ -55,10 +51,8 @@ div.opzioni {
     justify-content: center;
     box-sizing: border-box;
     
-    /* OTTIMIZZATO: Niente più 'transition: all' */
     transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1), height 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s ease, box-shadow 0.3s ease;
     
-    /* Forza il rendering hardware su scheda grafica */
     will-change: width, height; 
 }
 
@@ -86,6 +80,7 @@ div.opzioni.selezionato {
     height: 80px;
     padding: 12px;
     border-radius: 12px;
+    padding: 10px 0;
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 #sezione-split {
@@ -162,7 +157,7 @@ li {
     box-shadow: 0 4px 10px rgba(0,0,0,0.05);
     box-sizing: border-box;
     position: sticky;
-    top: 150px;              /* FONDAMENTALE: Aumentato da 20px a 150px! */
+    top: 150px;              
     align-self: flex-start; 
     height: fit-content;     
     z-index: 10;            
@@ -197,12 +192,12 @@ li {
 
 .badge-live {
     background-color: #e6f2ff;
-    color: #007BFF;
+    color: #007bff;
     padding: 12px;
     border-radius: 6px;
     font-weight: bold;
     margin-bottom: 20px;
-    border-left: 4px solid #007BFF;
+    border-left: 4px solid #007bff;
 }
 
 .nascosto { 
@@ -248,4 +243,5 @@ input  {
 select {
     background-color: white;
     width: 100%;
+    height: 30px;
 }
