@@ -16,6 +16,6 @@ where 1 = 1
         ($3::varchar[] is not null and diagnosi_principali ilike any($3::varchar[]))
         or
         -- Se non hai scritto nessun tag, mostra le top 5 di default
-        ($3::varchar[] is null and diagnosi_principali in (select diagnosi_principales from top_malattie))
+        ($3::varchar[] is null and diagnosi_principali in (select diagnosi_principali from top_malattie))
     )
 order by mese_riferimento asc, numero_ricoveri desc;

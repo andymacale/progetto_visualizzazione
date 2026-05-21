@@ -178,7 +178,7 @@ function disegnaGraficoCartesiano(righeDb) {
                             
                             const giorni = rigaOriginale ? (rigaOriginale.media_ore_degenza / 24).toFixed(1) : 0;
                             return [
-                                `🚨 DEGENZA MEDIA: ${giorni} GIORNI`,
+                                `DEGENZA MEDIA: ${giorni} GIORNI`,
                                 `------------------------------------------`,
                                 `Reparto: ${labelOriginale[0]}`,
                                 `Malattia: ${labelOriginale[1]}`,

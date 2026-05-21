@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <title>Visualizzazione Dati - Gestione Ospedale</title>
+    <title>Gestione Ospedale</title>
     <link rel="icon" type="image/png" href="/img/logo.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -32,9 +32,9 @@
                 <h3>Analisi Ricoveri Stagionali</h3>
                 
                 <div class="campo-input">
-                    <label style="display: block; font-weight: bold; margin-bottom: 6px; font-size: 14px;">Seleziona Reparti:</label>
-                    <div id="container-reparti" style="max-height: 180px; overflow-y: auto; border: 1px solid #ccc; border-radius: 6px; padding: 10px; background: white; box-sizing: border-box;">
-                        <span style="color: #888; font-size: 13px;">Caricamento reparti...</span>
+                    <label>Seleziona Reparti:</label>
+                    <div id="container-reparti">
+                        <span class="testo-caricamento">Caricamento reparti...</span>
                     </div>
                 </div>
 
@@ -50,8 +50,8 @@
 
                 <div class="campo-input">
                     <label for="nome-diagnosi">Diagnosi Principali (Scrivi e premi Invio):</label>
-                    <div id="wrapper-tag-diagnosi" style="display: flex; flex-wrap: wrap; gap: 6px; border: 1px solid #ccc; border-radius: 6px; padding: 6px 10px; background: white; min-height: 40px; box-sizing: border-box; align-items: center; cursor: text;">
-                        <input type="text" id="nome-diagnosi" placeholder="Es. COVID, Sepsis..." style="border: none; outline: none; padding: 4px; flex: 1; min-width: 120px; width: auto; margin: 0; font-family: 'Montserrat', sans-serif;">
+                    <div id="wrapper-tag-diagnosi">
+                        <input type="text" id="nome-diagnosi" placeholder="Es. COVID, Sepsis...">
                     </div>
                 </div>
             </div>
@@ -72,12 +72,10 @@
 
         <div class="colonna-risultati">
             <div id="risultati-posti" class="blocco-dinamico">
-                
-                <div style="position: relative; height: 550px; width: 100%; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); box-sizing: border-box;">
+                <div class="quadro-grafico">
                     <canvas id="graficoCartesiano"></canvas>
                 </div>
             </div>
-        </div>
 
             <div id="risultati-medicinali" class="blocco-dinamico">
                 <h2>Scorte Farmacia Live</h2>
@@ -97,10 +95,16 @@
                     </table>
                 </div>
             </div>
-
         </div>
 
     </div>
+
+    <footer>
+        <div class="footer-content">
+            <p>Visualizzazione delle informazioni</p>
+            <p class="footer-sub">Andrea Macale (560763)</p>
+        </div>
+    </footer>
 
     <script src="/js/spinner.js"></script>
     <script src="/js/app.js"></script>
