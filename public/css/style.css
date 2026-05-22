@@ -1,6 +1,4 @@
-/* =========================================
-   STILI GENERALI DI BASE
-   ========================================= */
+
 body {
     font-family: 'Montserrat', sans-serif;
     margin: 0; 
@@ -8,7 +6,7 @@ body {
     background-color: #f0f0f0;
     min-height: 100vh; 
     display: flex;
-    flex-direction: column; /* Necessario per spingere il footer in fondo */
+    flex-direction: column; 
 }
 
 header {
@@ -26,9 +24,7 @@ h1.start {
     font-size: 36px; 
 }
 
-/* =========================================
-   NAVIGAZIONE SUPERIORE (STICKY)
-   ========================================= */
+
 #flex-opzioni {
     position: sticky;
     top: 0;
@@ -86,14 +82,12 @@ div.opzioni.selezionato {
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
-/* =========================================
-   LAYOUT STRUTTURALE SPLIT (FLEX)
-   ========================================= */
+
 #sezione-split {
     display: flex;
     margin: 20px 40px;
     gap: 30px;
-    flex: 1; /* Prende tutto lo spazio disponibile spingendo giù il footer */
+    flex: 1;
 }
 
 @keyframes scivolaSu {
@@ -105,10 +99,7 @@ div.opzioni.selezionato {
     animation: scivolaSu 0.7s cubic-bezier(0.25, 1, 0.5, 1) forwards;
 }
 
-/* ALTEZZA UNIFORMATA: 
-   Entrambe le colonne sono impostate a 600px di altezza. 
-   Filtri e Grafico ora si allineano simmetricamente.
-*/
+
 .colonna-form {
     flex: 0 0 25%;
     background-color: #ffffff;
@@ -119,7 +110,7 @@ div.opzioni.selezionato {
     position: sticky;
     top: 130px;              
     align-self: flex-start; 
-    height: 600px;           /* Uniformata all'altezza totale del grafico */
+    height: 600px;           
     z-index: 10;            
 }
 
@@ -130,14 +121,12 @@ div.opzioni.selezionato {
     border-radius: 12px;
     box-shadow: 0 4px 10px rgba(0,0,0,0.05);
     box-sizing: border-box;
-    height: 600px;           /* Uniformata all'altezza della colonna filtri */
+    /* NUOVO: Altezza dinamica che si adatta a tutto il contenuto! */
+    height: auto;           
+    min-height: 600px;      
 }
-
-/* =========================================
-   EX-STILI INLINE TRASFERITI DAI FILTRI
-   ========================================= */
 #container-reparti {
-    max-height: 250px; /* Ridotto leggermente per far entrare tutto nei 600px fissi */
+    max-height: 250px; 
     overflow-y: auto; 
     border: 1px solid #ccc; 
     border-radius: 6px; 
@@ -165,19 +154,17 @@ div.opzioni.selezionato {
     cursor: text;
 }
 
-/* Risoluzione conflitto larghezze dell'input manuale tag */
 #nome-diagnosi {
     border: none !important; 
     outline: none !important; 
     padding: 4px; 
     flex: 1; 
     min-width: 120px; 
-    width: auto !important; /* Sovrascrive la regola del 90% globale in fondo */
+    width: auto !important; 
     margin: 0 !important; 
     font-family: 'Montserrat', sans-serif;
 }
 
-/* Quadro bianco interno che contiene il grafico canvas */
 .quadro-grafico {
     position: relative; 
     height: 550px; 
@@ -186,9 +173,6 @@ div.opzioni.selezionato {
     box-sizing: border-box;
 }
 
-/* =========================================
-   ELEMENTI DEI FORM E COMPONENTI INTERNE
-   ========================================= */
 .campo-input {
     margin-bottom: 15px;
 }
@@ -217,14 +201,11 @@ div.opzioni.selezionato {
     display: none !important;
 }
 
-/* =========================================
-   INPUT CONTROLLI E OVERRIDE GLOBALI
-   ========================================= */
+
 input, select {
     border-radius: 6px;
 }
 
-/* Nota: Questa regola impatta solo gli input generici non sovrascritti */
 input {
     width: 90%;
     height: 30px
@@ -236,9 +217,7 @@ select {
     height: 30px;
 }
 
-/* =========================================
-   CONFIGURAZIONE STILE FOOTER
-   ========================================= */
+
 footer {
     background-color: #e0e0e0;
     color: #444;
@@ -248,7 +227,7 @@ footer {
     font-weight: 500;
     width: 100%;
     box-sizing: border-box;
-    margin-top: auto; /* Spinge il footer magneticamente a fondo pagina */
+    margin-top: auto; 
     border-top: 1px solid #d0d0d0;
 }
 
@@ -260,4 +239,138 @@ footer {
     color: #777;
     font-size: 11px;
     font-weight: 400;
+}
+
+/* =========================================
+   STILI HEATMAP (LEGENDA MATRICE)
+   ========================================= */
+#heatmap-container {
+    margin-top: 15px;
+    background: #ffffff;
+    padding: 12px;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    box-sizing: border-box;
+}
+
+.heatmap-titolo {
+    font-size: 11px;
+    font-weight: bold;
+    color: #444;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.heatmap-griglia {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.heatmap-riga {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.heatmap-etichetta-reparto {
+    flex: 0 0 120px;
+    font-size: 10px;
+    font-weight: 600;
+    color: #555;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.heatmap-celle-mesi {
+    display: flex;
+    flex: 1;
+    gap: 3px;
+}
+
+.heatmap-cella {
+    flex: 1;
+    height: 18px;
+    border-radius: 2px;
+    border: 1px solid rgba(0,0,0,0.05);
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.heatmap-cella:hover {
+    transform: scale(1.12);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    z-index: 5;
+}
+
+/* =========================================
+   CONTENITORE MULTI-TAG DIAGNOSI (INPUT STYLE)
+   ========================================= */
+#wrapper-tag-diagnosi {
+    display: flex;
+    flex-wrap: wrap; /* Permette ai tag di andare a capo se sono tanti */
+    gap: 6px;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background-color: #ffffff;
+    cursor: text;
+    min-height: 40px;
+    box-sizing: border-box;
+    align-items: center;
+}
+
+/* Svuota lo stile dell'input di testo nativo nascosto dentro al box dei tag */
+#wrapper-tag-diagnosi input {
+    border: none !important;
+    outline: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    flex: 1; /* Prende tutto lo spazio rimanente sulla destra */
+    min-width: 120px;
+    height: 24px;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 14px;
+}
+
+/* Riquadro del grafico cartesiano per tenerlo ben dimensionato */
+/* Riquadro unificato per Grafico e Heatmap */
+.quadro-grafico {
+    position: relative; 
+    width: 100%; 
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 15px; 
+}
+
+/* =========================================
+   SCROLLBAR ELEGANTE PER LA HEATMAP
+   ========================================= */
+.heatmap-righe-scroll {
+    max-height: 180px; /* Mostra circa 4 righe, le altre le fa scorrere */
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+
+.heatmap-righe-scroll::-webkit-scrollbar {
+    width: 6px;
+}
+.heatmap-righe-scroll::-webkit-scrollbar-track {
+    background: #f8f9fa; 
+    border-radius: 4px;
+}
+.heatmap-righe-scroll::-webkit-scrollbar-thumb {
+    background: #cccccc; 
+    border-radius: 4px;
+}
+.heatmap-righe-scroll::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8; 
 }

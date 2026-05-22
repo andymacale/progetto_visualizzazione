@@ -51,29 +51,30 @@ app.get('/api/reparti', async (req, res) => {
 });
 
 app.get('/api/analisi-stagionale', async (req, res) => {
-    const dataInizio = req.query.dataInizio || null;
-    const dataFine = req.query.dataFine || null;
+    // Ricezione degli anni come numeri interi per evitare conflitti con il tipo date
+    const dataInizio = req.query.dataInizio ? parseInt(req.query.dataInizio) : null;
+    const dataFine = req.query.dataFine ? parseInt(req.query.dataFine) : null;
     
-    // 1. DIAGNOSI MULTIPLE: Forza Express a trattarlo come un array
+    // 1. DIAGNOSI MULTIPLE: Trasforma in array e aggiunge i simboli % per la query ILIKE ANY
     let diagnosi = req.query.diagnosi || null;
     if (diagnosi) {
         if (!Array.isArray(diagnosi)) diagnosi = [diagnosi];
-        // Trasformiamo ogni tag inserito in %nome_malattia% per la ricerca parziale SQL
         diagnosi = diagnosi.map(d => `%${d}%`);
     }
     
-    // 2. REPARTI MULTIPLI: Rimane invariato, già configurato come array
+    // 2. REPARTI MULTIPLI: Gestione dell'array per il database
     let reparto = req.query.reparto || null;
-    if (reparto && !Array.isArray(reparto)) reparto = [reparto];
+    if (reparto && !Array.isArray(reparto)) {
+        reparto = [reparto];
+    }
 
     try {
         const result = await pool.query(queryAnalisiStagionale, [
-            dataInizio,  // $1
-            dataFine,    // $2
-            diagnosi,    // $3 (Varchar)
-            reparto      // $4 (Varchar[] - Array)
+            dataInizio,  // $1 (Integer)
+            dataFine,    // $2 (Integer)
+            diagnosi,    // $3 (Varchar[] - Array di diagnosi)
+            reparto      // $4 (Varchar[] - Array di reparti)
         ]);
-        
         res.json(result.rows);
     } catch (err) {
         console.error("Errore query analisi stagionale:", err);
