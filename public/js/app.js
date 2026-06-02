@@ -1,6 +1,4 @@
-// ==========================================
-// 1. SELEZIONE DEGLI ELEMENTI DOM
-// ==========================================
+// SELEZIONE DEGLI ELEMENTI DOM
 const btnPosti = document.getElementById('btn-posti');
 const btnMedicinali = document.getElementById('btn-medicinali');
 const sezioneSplit = document.getElementById('sezione-split');
@@ -55,16 +53,14 @@ function commutaVisualizzazione(tipo) {
         formMedicinali.style.display = 'none';
         risMedicinali.style.display = 'none';
 
-        mostraMessaggioGrafico("inserire gli anni di riferimento");
+        mostraMessaggioGrafico("Inserire gli anni di riferimento");
 
         setTimeout(() => { ricaricaDati('posti'); }, 400);
     }
 }
 btnPosti.addEventListener('click', () => commutaVisualizzazione('posti'));
 
-// ==========================================
-// 3. COSTRUZIONE DELL'ISTOGRAMMA RAGGRUPPATO
-// ==========================================
+// COSTRUZIONE DELL'ISTOGRAMMA RAGGRUPPATO
 function disegnaGraficoCartesiano(righeDb) {
     if (chartCartesiano) chartCartesiano.destroy();
 
@@ -214,6 +210,7 @@ function disegnaGraficoCartesiano(righeDb) {
             },
             scales: {
                 x: { 
+                    stacked: true,
                     grid: { 
                         display: true,          
                         offset: true,           
@@ -225,6 +222,7 @@ function disegnaGraficoCartesiano(righeDb) {
                     title: { display: true, text: 'Mesi di Riferimento', font: { weight: 'bold', size: 11 } } 
                 },
                 y: { 
+                    stacked: true,
                     beginAtZero: true, 
                     title: { display: true, text: 'Letti Medi Occupati', font: { weight: 'bold', size: 11 } } 
                 }
@@ -257,12 +255,6 @@ function regolareLuminosita(hex, percent) {
     return "#" + rHex + gHex + bHex;
 }
 
-// =========================================================================
-// NUOVA LEGENDA VISIVA: MOSTRA I COLORI DEGLI ANNI E IL VOLUME DEI RICOVERI
-// =========================================================================
-// =========================================================================
-// NUOVA LEGENDA VISIVA: SCORREVOLE CON INTESTAZIONE FISSA
-// =========================================================================
 function generoHeatmapLegenda(righeDb, anniUnici, coloriReparti, malattieUniche) {
     const containerHeatmap = document.getElementById('heatmap-container');
     if (!containerHeatmap) return;
@@ -287,9 +279,9 @@ function generoHeatmapLegenda(righeDb, anniUnici, coloriReparti, malattieUniche)
         }
     });
 
-    // 2. INTESTAZIONE FISSA (Non scorre)
+    // INTESTAZIONE FISSA 
     let htmlMappa = `
-        <div class="heatmap-titolo" style="margin-top: 10px; margin-bottom: 12px;">🎨 Legenda Anni e Volume Ricoveri Totale (Pazienti)</div>
+        <div class="heatmap-titolo" style="margin-top: 10px; margin-bottom: 12px;"> Legenda Anni e Volume Ricoveri Totale (Pazienti)</div>
         <div class="heatmap-griglia">
             
             <div class="heatmap-riga" style="margin-bottom: 8px; padding-bottom: 6px; border-bottom: 2px solid #eee; padding-right: 12px;">
@@ -316,8 +308,8 @@ function generoHeatmapLegenda(righeDb, anniUnici, coloriReparti, malattieUniche)
         htmlMappa += `
             <div class="heatmap-riga">
                 <div class="heatmap-etichetta-reparto" style="flex: 0 0 200px; line-height: 1.2;" title="${data.reparto} - ${data.malattia}">
-                    <strong>🏢 ${repartoBreve}</strong><br>
-                    <span style="font-size: 10px; color: #666;">🦠 ${data.malattia}</span>
+                    <strong> ${repartoBreve}</strong><br>
+                    <span style="font-size: 10px; color: #666;"> ${data.malattia}</span>
                 </div>
                 <div class="heatmap-celle-mesi">`;
 
@@ -331,7 +323,7 @@ function generoHeatmapLegenda(righeDb, anniUnici, coloriReparti, malattieUniche)
                     <div class="heatmap-cella" 
                          style="background-color: ${coloreBarraMappata}; border: ${stileBordo}; border-radius: 4px; height: 36px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: bold; color: #fff; text-shadow: 0px 1px 3px rgba(0,0,0,0.9); cursor: pointer;" 
                          title="Reparto: ${data.reparto}\nMalattia: ${data.malattia}\nAnno: ${anno}\nPazienti Totali: ${datiAnno.volumeRicoveri}"
-                         onclick="alert('🏢 ${data.reparto}\\n🦠 ${data.malattia}\\n📅 Anno: ${anno}\\n👥 Volume Totale Pazienti: ${datiAnno.volumeRicoveri}')">
+                         onclick="alert(' ${data.reparto}\\n ${data.malattia}\\n Anno: ${anno}\\n Volume Totale Pazienti: ${datiAnno.volumeRicoveri}')">
                          ${datiAnno.volumeRicoveri}
                     </div>`;
             } else {
@@ -342,14 +334,11 @@ function generoHeatmapLegenda(righeDb, anniUnici, coloriReparti, malattieUniche)
         htmlMappa += `</div></div>`;
     });
 
-    htmlMappa += `</div>`; // Chiude il contenitore scorrevole
-    htmlMappa += `</div>`; // Chiude la griglia generale
+    htmlMappa += `</div>`; 
+    htmlMappa += `</div>`; 
     containerHeatmap.innerHTML = htmlMappa;
 }
 
-// ==========================================
-// GLOBALI PER I MULTI-TAG DELLE DIAGNOSI
-// ==========================================
 let diagnosiScelte = [];
 const wrapperTagDiagnosi = document.getElementById('wrapper-tag-diagnosi');
 
@@ -389,9 +378,7 @@ inputDiagnosi.addEventListener('keyup', (e) => {
     }
 });
 
-// ==========================================
-// 4. RICHIESTA DATI AL SERVER E AGGREGAZIONE MALATTIE SIMILI
-// ==========================================
+// RICHIESTA DATI AL SERVER E AGGREGAZIONE MALATTIE SIMILI
 async function ricaricaDati(sezioneDati) {
     if (sezioneDati !== 'posti') return;
     
@@ -399,7 +386,7 @@ async function ricaricaDati(sezioneDati) {
     const valoreFineRaw = inputDataFine.value.trim();
 
     if (!valoreInizioRaw || !valoreFineRaw) {
-        mostraMessaggioGrafico("inserire gli anni di riferimento");
+        mostraMessaggioGrafico("Inserire gli anni di riferimento");
         return;
     }
 
@@ -421,13 +408,11 @@ async function ricaricaDati(sezioneDati) {
 
         if (righeDbRaw.length > 0) {
             
-            // AGGREGAZIONE DELLE VARIANTI CLINICHE IN UN UNICO NOME
             const mappaAggregata = {};
             
             righeDbRaw.forEach(riga => {
                 let nomeMalattia = riga.diagnosi_principali;
                 
-                // Raggruppa sotto il nome del tag tutte le malattie pescate da "ilike"
                 if (diagnosiScelte.length > 0) {
                     const tagTrovato = diagnosiScelte.find(tag => 
                         riga.diagnosi_principali.toLowerCase().includes(tag.toLowerCase())
@@ -467,9 +452,7 @@ containerReparti.addEventListener('change', () => eseguiConDebounce(() => ricari
 inputDataInizio.addEventListener('input', () => eseguiConDebounce(() => ricaricaDati('posti'), 400));
 inputDataFine.addEventListener('input', () => eseguiConDebounce(() => ricaricaDati('posti'), 400));
 
-// ==========================================
-// 5. FUNZIONE DI UTILITÀ PER MESSAGGI DI ERRORE
-// ==========================================
+// FUNZIONE DI UTILITÀ PER MESSAGGI DI ERRORE
 function mostraMessaggioGrafico(messaggio) {
     if (chartCartesiano) {
         chartCartesiano.destroy();
@@ -483,6 +466,10 @@ function mostraMessaggioGrafico(messaggio) {
 
     const canvas = document.getElementById('graficoCartesiano');
     if (canvas) {
+        // Sincronizza la risoluzione interna del canvas con le dimensioni CSS del contenitore
+        canvas.width = canvas.parentElement.clientWidth || 800;
+        canvas.height = canvas.parentElement.clientHeight || 400;
+
         const ctx = canvas.getContext('2d');
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         
