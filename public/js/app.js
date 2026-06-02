@@ -141,6 +141,9 @@ function disegnaGraficoCartesiano(righeDb) {
         };
     });
 
+    // Ordinamento alfabetico per Reparto per impilare il grafico in modo coerente
+    datasets.sort((a, b) => a.repartoEsteso.localeCompare(b.repartoEsteso));
+
     const ctx = document.getElementById('graficoCartesiano').getContext('2d');
     chartCartesiano = new Chart(ctx, {
         type: 'bar',
