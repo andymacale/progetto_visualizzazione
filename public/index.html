@@ -14,21 +14,11 @@
     <header>
         <h1 class="start">Gestione dell'ospedale</h1>
     </header>
-
-    <div id="flex-opzioni">
-        <div class="opzioni" id="btn-posti">
-            <img class="opzioni" src="/img/posti.png" alt="Posti Letto"/> 
-        </div>
-        <div class="opzioni" id="btn-medicinali">
-            <img class="opzioni" src="/img/medicinali.png" alt="Medicinali"/>
-        </div>
-    </div>
         
-    <div id="sezione-split" class="nascosto">
+    <div id="sezione-split">
         
         <div class="colonna-form">
-            
-            <div id="form-posti" class="blocco-dinamico">
+            <div id="form-posti">
                 <h3>Analisi Ricoveri Stagionali</h3>
                 
                 <div class="campo-input">
@@ -55,54 +45,23 @@
                     </div>
                 </div>
             </div>
-
-            <div id="form-medicinali" class="blocco-dinamico">
-                <h3>Filtro Medicinali</h3>
-                <div class="campo-input">
-                    <label for="nome-farmaco">Nome Farmaco:</label>
-                    <input type="text" id="nome-farmaco" placeholder="Es. Paracetamolo...">
-                </div>
-                <div class="campo-input">
-                    <label for="quantita">Scorta Minima:</label>
-                    <input type="number" id="quantita" min="0" value="0">
-                </div>
-            </div>
-
         </div>
 
         <div class="colonna-risultati">
-            <div id="risultati-posti" class="blocco-dinamico">
+            <div id="risultati-posti">
                 <div class="quadro-grafico">
-                    
-                    <div style="position: relative; height: 400px; width: 100%;">
+                    <div style="position: relative; height: 500px; width: 100%;">
                         <canvas id="graficoCartesiano"></canvas>
                     </div>
-                    
-                    <div id="heatmap-container"></div>
-                    
-                </div>
-            </div>
-
-            <div id="risultati-medicinali" class="blocco-dinamico">
-                <h2>Scorte Farmacia Live</h2>
-                <div class="tabella-responsiva">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Farmaco</th>
-                                <th>Quantità Disponibile</th>
-                            </tr>
-                        </thead>
-                        <tbody id="corpo-tabella-medicinali">
-                            <tr>
-                                <td colspan="2" class="tabella-vuota">Seleziona i filtri dei medicinali per vedere le scorte.</td>
-                            </tr>
-                        </tbody>
-                    </table>
                 </div>
             </div>
         </div>
 
+    </div>
+
+    <!-- HEATMAP (LEGENDA) SEPARATA SOTTO A TUTTO -->
+    <div style="margin: 0 40px 30px 40px; border-top: 2px solid #ddd; padding-top: 15px;">
+        <div id="heatmap-container"></div>
     </div>
 
     <footer>
@@ -111,6 +70,11 @@
             <p class="footer-sub">Andrea Macale (560763)</p>
         </div>
     </footer>
+
+    <!-- Spinner Croce Rotante -->
+    <div id="spinner-db" class="nascosto">
+        <div class="croce-rotante"></div>
+    </div>
 
     <script src="/js/spinner.js"></script>
     <script src="/js/app.js"></script>

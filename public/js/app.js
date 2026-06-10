@@ -1,20 +1,12 @@
 // SELEZIONE DEGLI ELEMENTI DOM
 const btnPosti = document.getElementById('btn-posti');
-const btnMedicinali = document.getElementById('btn-medicinali');
-const sezioneSplit = document.getElementById('sezione-split');
-const formPosti = document.getElementById('form-posti');
-const formMedicinali = document.getElementById('form-medicinali');
-const risPosti = document.getElementById('risultati-posti');
-const risMedicinali = document.getElementById('risultati-medicinali');
+const containerReparti = document.getElementById('container-reparti');
 
 const inputDataInizio = document.getElementById('data-inizio');
 const inputDataFine = document.getElementById('data-fine');
 const inputDiagnosi = document.getElementById('nome-diagnosi');
-const containerReparti = document.getElementById('container-reparti');
 
-const flexOpzioni = document.getElementById('flex-opzioni');
 let chartCartesiano = null; 
-let sezioneAttiva = null;
 
 async function caricaReparti() {
     try {
@@ -32,33 +24,12 @@ async function caricaReparti() {
 }
 caricaReparti();
 
-function commutaVisualizzazione(tipo) {
-    if (sezioneAttiva === tipo) {
-        sezioneSplit.classList.add('nascosto');
-        btnPosti.classList.remove('selezionato');
-        btnMedicinali.classList.remove('selezionato');
-        sezioneAttiva = null;
-        flexOpzioni.classList.remove('compatto'); 
-        return;
+// Avvio automatico se entrambi gli anni sono già impostati (nel caso di refresh)
+setTimeout(() => {
+    if (inputDataInizio.value.trim() && inputDataFine.value.trim()) {
+        ricaricaDati('posti');
     }
-    sezioneAttiva = tipo;
-    sezioneSplit.classList.remove('nascosto');
-    flexOpzioni.classList.add('compatto'); 
-
-    if (tipo === 'posti') {
-        btnPosti.classList.add('selezionato');
-        btnMedicinali.classList.remove('selezionato');
-        formPosti.style.display = 'block';
-        risPosti.style.display = 'block';
-        formMedicinali.style.display = 'none';
-        risMedicinali.style.display = 'none';
-
-        mostraMessaggioGrafico("Inserire gli anni di riferimento");
-
-        setTimeout(() => { ricaricaDati('posti'); }, 400);
-    }
-}
-btnPosti.addEventListener('click', () => commutaVisualizzazione('posti'));
+}, 400);
 
 // COSTRUZIONE DELL'ISTOGRAMMA RAGGRUPPATO
 function disegnaGraficoCartesiano(righeDb) {
@@ -118,7 +89,7 @@ function disegnaGraficoCartesiano(righeDb) {
         const coloreBase = coloriReparti[g.reparto] || '#6c757d';
         
         const indiceAnno = anniUnici.indexOf(g.anno);
-        const coloreBarra = regolareLuminosita(coloreBase, indiceAnno * 35);
+        const coloreBarra = sfumaColoreDaScuro(coloreBase, indiceAnno, anniUnici.length);
 
         const indiceMalattia = malattieUniche.indexOf(g.malattia);
         const patternBordo = indiceMalattia === 0 ? [] : [indiceMalattia * 4, indiceMalattia * 3];
@@ -237,23 +208,24 @@ function disegnaGraficoCartesiano(righeDb) {
     generoHeatmapLegenda(righeDb, anniUnici, coloriReparti, malattieUniche);
 }
 
-// Funzione di utilità per variare i colori HEX (esattamente come nel grafico)
-function regolareLuminosita(hex, percent) {
+// Funzione per scurire i colori: dall'anno più vecchio (molto scuro) all'anno più recente (colore vivido originale)
+function sfumaColoreDaScuro(hex, indice, totElementi) {
+    if (totElementi <= 1) return hex;
+    
+    // Il fattore varia da 0.35 (scuro) a 1.0 (vivido base)
+    const factor = 0.35 + (0.65 * (indice / (totElementi - 1)));
+    
     let R = parseInt(hex.substring(1, 3), 16);
     let G = parseInt(hex.substring(3, 5), 16);
     let B = parseInt(hex.substring(5, 7), 16);
 
-    R = parseInt((R * (100 + percent)) / 100);
-    G = parseInt((G * (100 + percent)) / 100);
-    B = parseInt((B * (100 + percent)) / 100);
+    R = Math.floor(R * factor);
+    G = Math.floor(G * factor);
+    B = Math.floor(B * factor);
 
-    R = (R < 255) ? R : 255;  
-    G = (G < 255) ? G : 255;  
-    B = (B < 255) ? B : 255;  
-
-    const rHex = (R.toString(16).length === 1) ? "0" + R.toString(16) : R.toString(16);
-    const gHex = (G.toString(16).length === 1) ? "0" + G.toString(16) : G.toString(16);
-    const bHex = (B.toString(16).length === 1) ? "0" + B.toString(16) : B.toString(16);
+    const rHex = R.toString(16).padStart(2, '0');
+    const gHex = G.toString(16).padStart(2, '0');
+    const bHex = B.toString(16).padStart(2, '0');
 
     return "#" + rHex + gHex + bHex;
 }
@@ -320,7 +292,7 @@ function generoHeatmapLegenda(righeDb, anniUnici, coloriReparti, malattieUniche)
             const datiAnno = data[anno];
             
             if (datiAnno && datiAnno.volumeRicoveri > 0) {
-                const coloreBarraMappata = regolareLuminosita(coloreBase, indiceAnno * 35);
+                const coloreBarraMappata = sfumaColoreDaScuro(coloreBase, indiceAnno, anniUnici.length);
 
                 htmlMappa += `
                     <div class="heatmap-cella" 
@@ -451,9 +423,20 @@ async function ricaricaDati(sezioneDati) {
     }
 }
 
-containerReparti.addEventListener('change', () => eseguiConDebounce(() => ricaricaDati('posti'), 400));
-inputDataInizio.addEventListener('input', () => eseguiConDebounce(() => ricaricaDati('posti'), 400));
-inputDataFine.addEventListener('input', () => eseguiConDebounce(() => ricaricaDati('posti'), 400));
+containerReparti.addEventListener('change', () => {
+    if (inputDataInizio.value.trim() && inputDataFine.value.trim()) {
+        eseguiConDebounce(() => ricaricaDati('posti'), 400);
+    }
+});
+
+function gestisciInputAnni() {
+    if (inputDataInizio.value.trim() && inputDataFine.value.trim()) {
+        eseguiConDebounce(() => ricaricaDati('posti'), 400);
+    }
+}
+
+inputDataInizio.addEventListener('input', gestisciInputAnni);
+inputDataFine.addEventListener('input', gestisciInputAnni);
 
 // FUNZIONE DI UTILITÀ PER MESSAGGI DI ERRORE
 function mostraMessaggioGrafico(messaggio) {
