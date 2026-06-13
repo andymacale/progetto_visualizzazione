@@ -1,18 +1,16 @@
-require('dotenv').config();
-
 const express = require('express');
 const cors = require('cors');
-const { Pool } = require('pg');
-const fs = require('fs');    
-const path = require('path'); 
+const fs = require('fs');
+const path = require('path');
+const readline = require('readline');
 const { Worker } = require('worker_threads');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Configurazione percorso file temporaneo e tempo di aggiornamento (es. ogni 5 minuti)
 const CACHE_FILE = path.join(__dirname, 'public', 'temp', 'temp_analisi_stagionale.json');
-const MINUTI_AGGIORNAMENTO = 5; 
+const CSV_DATASET = path.join(__dirname, 'public', 'data', 'dataset.csv');
+const CSV_REPARTI = path.join(__dirname, 'public', 'data', 'reparti.csv');
 
 // --- SETUP WORKER THREAD ---
 const worker = new Worker(path.join(__dirname, 'worker', 'worker.js'));
@@ -38,57 +36,254 @@ worker.on('exit', code => {
     if (code !== 0) console.error(new Error(`Worker stopped with exit code ${code}`));
 });
 
-// Impostiamo a false e attendiamo il messaggio READY dal worker
 isWorkerReady = false;
 
 app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
-const pool = new Pool({
-  user: process.env.DB_USER,
-  host: process.env.DB_HOST,
-  database: process.env.DB_NAME,
-  password: process.env.DB_PASSWORD,
-  port: process.env.DB_PORT,
-});
+// --- REPARTI DA CSV (caricati una volta sola all'avvio) ---
+const repartiList = fs.readFileSync(CSV_REPARTI, 'utf-8')
+    .split('\n')
+    .slice(1)
+    .map(l => l.trim().replace(/^"|"$/g, ''))
+    .filter(l => l.length > 0)
+    .map(r => ({ reparto: r }));
 
-const queryReparti = fs.readFileSync(
-  path.join(__dirname, 'public/query/carica_reparti.sql'), 
-    'utf-8'
-);
+// --- UTILITÀ CSV ---
 
-// --- FUNZIONI DI PREPROCESSING OFFLINE ---
+// Parser di una singola riga CSV con gestione dei campi tra virgolette
+function parseCSVLine(line) {
+    const fields = [];
+    let i = 0;
+    let current = '';
+    let inQuote = false;
 
-// Funzione globale per estrarre i dati pre-aggregati dal database
+    while (i < line.length) {
+        const ch = line[i];
+        if (inQuote) {
+            if (ch === '"') {
+                if (line[i + 1] === '"') { current += '"'; i += 2; }
+                else { inQuote = false; i++; }
+            } else { current += ch; i++; }
+        } else {
+            if (ch === '"') { inQuote = true; i++; }
+            else if (ch === ',') { fields.push(current); current = ''; i++; }
+            else if (ch === '\r') { i++; }
+            else { current += ch; i++; }
+        }
+    }
+    fields.push(current);
+    return fields;
+}
+
+// Parser dell'array PostgreSQL: {"val1","val2",...} → ['val1', 'val2', ...]
+function parsePgArray(str) {
+    if (!str || str.trim() === '' || str.toUpperCase() === 'NULL' || str === '{}') return [];
+    const inner = str.slice(1, -1).trim();
+    if (!inner) return [];
+
+    const results = [];
+    let i = 0;
+
+    while (i < inner.length) {
+        if (inner[i] === '"') {
+            i++;
+            let val = '';
+            while (i < inner.length) {
+                if (inner[i] === '"' && inner[i + 1] === '"') { val += '"'; i += 2; }
+                else if (inner[i] === '"') { i++; break; }
+                else { val += inner[i]; i++; }
+            }
+            results.push(val);
+        } else {
+            let j = i;
+            while (j < inner.length && inner[j] !== ',') j++;
+            const val = inner.slice(i, j).trim();
+            if (val) results.push(val);
+            i = j;
+        }
+        if (i < inner.length && inner[i] === ',') i++;
+    }
+
+    return results;
+}
+
+// Numero di giorni in un mese (gestisce anni bisestili per febbraio)
+function giorniMese(anno, mese) {
+    return new Date(Date.UTC(anno, mese, 0)).getUTCDate();
+}
+
+// Converte "YYYY-MM-DD HH:MM:SS" in numero di giorni dall'epoch UTC
+function dataAdGiornoEpoch(dateStr) {
+    const datePart = dateStr.split(' ')[0].trim();
+    const [y, m, d] = datePart.split('-').map(Number);
+    return Math.floor(Date.UTC(y, m - 1, d) / 86400000);
+}
+
+// --- CALCOLO OCCUPAZIONE MENSILE ---
+//
+// Per ogni periodo di occupazione di un posto letto [in_g, out_g):
+//   - Il giorno di OUT NON è contato (running sum: +1 al giorno IN, -1 al giorno OUT,
+//     quindi a fine giornata OUT il contatore torna a 0)
+//   - L'ultimo giorno occupato = out_g - 1  (o globalMaxGiorno se non c'è OUT)
+//
+// Per ogni mese, si calcola:
+//   posti_medi = somma(giorni-letto sovrapposti al mese) / giorni_del_mese
+//
+// Questo è equivalente a calcolare, giorno per giorno, il running sum dei posti
+// occupati e poi dividerlo per i giorni del mese.
+
+function aggiungiPeriodo(monthlyBuckets, reparto, in_g, out_g, diagnosi, globalMaxGiorno) {
+    const ultimoGiorno = out_g !== null ? out_g - 1 : globalMaxGiorno;
+
+    // Caso degenerato: dimissione nello stesso giorno del ricovero → 0 posti-giorno, 1 ricovero
+    if (ultimoGiorno < in_g) {
+        const startDate = new Date(in_g * 86400000);
+        const anno = startDate.getUTCFullYear();
+        const mese = startDate.getUTCMonth() + 1;
+        const D = giorniMese(anno, mese);
+        for (const d of diagnosi) {
+            const bKey = `${anno}-${mese}|||${reparto}|||${d}`;
+            if (!monthlyBuckets[bKey]) {
+                monthlyBuckets[bKey] = { anno, mese, reparto, diagnosi: d, D, totalBedDays: 0, ricoveri: 0 };
+            }
+            monthlyBuckets[bKey].ricoveri += 1;
+        }
+        return;
+    }
+
+    const startDate = new Date(in_g * 86400000);
+    let anno = startDate.getUTCFullYear();
+    let mese = startDate.getUTCMonth() + 1;
+
+    const endDate = new Date(ultimoGiorno * 86400000);
+    const endAnno = endDate.getUTCFullYear();
+    const endMese = endDate.getUTCMonth() + 1;
+
+    while (anno < endAnno || (anno === endAnno && mese <= endMese)) {
+        const D = giorniMese(anno, mese);
+        const monthStart = Math.floor(Date.UTC(anno, mese - 1, 1) / 86400000);
+        const monthEnd = monthStart + D - 1;
+
+        const overlapStart = Math.max(in_g, monthStart);
+        const overlapEnd   = Math.min(ultimoGiorno, monthEnd);
+        const overlapDays  = Math.max(0, overlapEnd - overlapStart + 1);
+        const isAdmission  = (in_g >= monthStart && in_g <= monthEnd) ? 1 : 0;
+
+        if (overlapDays > 0 || isAdmission > 0) {
+            for (const d of diagnosi) {
+                const bKey = `${anno}-${mese}|||${reparto}|||${d}`;
+                if (!monthlyBuckets[bKey]) {
+                    monthlyBuckets[bKey] = { anno, mese, reparto, diagnosi: d, D, totalBedDays: 0, ricoveri: 0 };
+                }
+                monthlyBuckets[bKey].totalBedDays += overlapDays;
+                monthlyBuckets[bKey].ricoveri     += isAdmission;
+            }
+        }
+
+        mese++;
+        if (mese > 12) { mese = 1; anno++; }
+    }
+}
+
+// --- PREPROCESSING OFFLINE DA CSV ---
+
 async function generaPreprocessingOffline() {
-    console.log(`[${new Date().toLocaleTimeString()}] Avvio del preprocessing offline dal DB...`);
+    console.log(`[${new Date().toLocaleTimeString()}] Avvio del preprocessing offline da CSV...`);
     try {
-        const queryGlobal = fs.readFileSync(
-            path.join(__dirname, 'public/query/preprocessing.sql'), 
-            'utf-8'
-        );
+        const bedEvents = {};
+        let globalMaxGiorno = 0;
 
-        const risultato = await pool.query(queryGlobal);
-        
-        // Scrittura sincrona del file temporaneo JSON come richiesto
-        fs.writeFileSync(CACHE_FILE, JSON.stringify(risultato.rows, null, 2), 'utf-8');
-        
-        // Passiamo al Worker Thread solo il percorso del JSON
-        // Il worker leggerà fisicamente dal .json ed eseguirà lì i filtri
-        isWorkerReady = false;
-        worker.postMessage({
-            type: 'SET_CACHE',
-            payload: { cacheFile: CACHE_FILE }
+        // Step 1: Lettura riga per riga del CSV (efficiente anche su file grandi)
+        await new Promise((resolve, reject) => {
+            const rl = readline.createInterface({
+                input: fs.createReadStream(CSV_DATASET, { encoding: 'utf8' }),
+                crlfDelay: Infinity
+            });
+
+            let isHeader = true;
+            rl.on('line', (line) => {
+                if (isHeader) { isHeader = false; return; }
+                const trimmed = line.trim();
+                if (!trimmed) return;
+
+                const f = parseCSVLine(trimmed);
+                if (f.length < 7) return;
+
+                const tipo     = f[3];
+                const giorno   = dataAdGiornoEpoch(f[4]);
+                const reparto  = f[5];
+                const numero_pl = f[2];
+                const diagnosi = parsePgArray(f[6]);
+
+                if (diagnosi.length === 0) return;
+                if (giorno > globalMaxGiorno) globalMaxGiorno = giorno;
+
+                const key = `${reparto}|${numero_pl}`;
+                if (!bedEvents[key]) bedEvents[key] = { reparto, eventi: [] };
+                bedEvents[key].eventi.push({ tipo, giorno, diagnosi });
+            });
+
+            rl.on('close', resolve);
+            rl.on('error', reject);
         });
-        
+
+        // Step 2: Abbina IN/OUT per ogni posto letto e calcola contributi mensili
+        //
+        // Gli eventi di ogni letto sono ordinati per data e abbinati in coppie
+        // IN → OUT (o IN senza OUT per pazienti ancora ricoverati).
+        // Per ogni coppia si calcola la sovrapposizione con ciascun mese del calendario.
+        const monthlyBuckets = {};
+
+        for (const { reparto, eventi } of Object.values(bedEvents)) {
+            eventi.sort((a, b) => a.giorno - b.giorno);
+
+            let pendingIn = null;
+
+            for (const e of eventi) {
+                if (e.tipo === 'IN') {
+                    if (pendingIn !== null) {
+                        // IN senza OUT precedente: aggiungiamo comunque il periodo
+                        aggiungiPeriodo(monthlyBuckets, reparto, pendingIn.giorno, null, pendingIn.diagnosi, globalMaxGiorno);
+                    }
+                    pendingIn = e;
+                } else {
+                    if (pendingIn !== null) {
+                        aggiungiPeriodo(monthlyBuckets, reparto, pendingIn.giorno, e.giorno, pendingIn.diagnosi, globalMaxGiorno);
+                        pendingIn = null;
+                    }
+                }
+            }
+            if (pendingIn !== null) {
+                aggiungiPeriodo(monthlyBuckets, reparto, pendingIn.giorno, null, pendingIn.diagnosi, globalMaxGiorno);
+            }
+        }
+
+        // Step 3: Converti i bucket nel formato atteso dal worker
+        const risultati = Object.values(monthlyBuckets).map(b => ({
+            anno:             b.anno,
+            mese:             b.mese,
+            reparto:          b.reparto,
+            diagnosi:         b.diagnosi,
+            posti_medi:       Math.round(b.totalBedDays / b.D * 100) / 100,
+            numero_ricoveri:  b.ricoveri
+        }));
+
+        // Step 4: Salva il JSON e notifica il worker
+        fs.writeFileSync(CACHE_FILE, JSON.stringify(risultati, null, 2), 'utf-8');
+
+        isWorkerReady = false;
+        worker.postMessage({ type: 'SET_CACHE', payload: { cacheFile: CACHE_FILE } });
+
         console.log(`[${new Date().toLocaleTimeString()}] Preprocessing completato! File salvato in: ${CACHE_FILE} e caricato nel worker.`);
     } catch (errore) {
         console.error("Errore critico durante il preprocessing offline:", errore);
     }
 }
 
-// Funzione di pulizia del file temporaneo alla chiusura del server
+// --- PULIZIA FILE TEMPORANEO ALLA CHIUSURA ---
+
 function cancellaFileTemporaneo() {
     if (fs.existsSync(CACHE_FILE)) {
         try {
@@ -102,27 +297,10 @@ function cancellaFileTemporaneo() {
 
 // --- ENDPOINT API ---
 
-app.get('/api/dati', async (req, res) => {
-  try {
-    const risultato = await pool.query('SELECT * FROM patients limit 10');
-    res.json(risultato.rows); 
-  } catch (errore) {
-    console.error(errore);
-    res.status(500).json({ error: 'Errore nel recupero dei dati' });
-  }
+app.get('/api/reparti', (_req, res) => {
+    res.json(repartiList);
 });
 
-app.get('/api/reparti', async (req, res) => {
-    try {
-      const result = await pool.query(queryReparti)
-      res.json(result.rows);
-    } catch (errore) {
-      console.error(errore)
-      res.status(500).json({error : 'Errore nel recupero dei dati' })
-    }
-});
-
-// Endpoint modificato: delega il calcolo pesante al Worker Thread
 app.get('/api/analisi-stagionale', async (req, res) => {
     if (!isWorkerReady) {
         return res.status(503).json({ error: "La cache è in fase di generazione nel worker, riprova tra qualche istante." });
@@ -130,16 +308,16 @@ app.get('/api/analisi-stagionale', async (req, res) => {
 
     try {
         const dataInizio = req.query.dataInizio ? parseInt(req.query.dataInizio) : null;
-        const dataFine = req.query.dataFine ? parseInt(req.query.dataFine) : null;
-        
+        const dataFine   = req.query.dataFine   ? parseInt(req.query.dataFine)   : null;
+
         let diagnosiFiltro = req.query.diagnosi || null;
         if (diagnosiFiltro && !Array.isArray(diagnosiFiltro)) diagnosiFiltro = [diagnosiFiltro];
-        
+
         let repartoFiltro = req.query.reparto || null;
         if (repartoFiltro && !Array.isArray(repartoFiltro)) repartoFiltro = [repartoFiltro];
 
         const reqId = nextReqId++;
-        
+
         const workerPromise = new Promise((resolve, reject) => {
             pendingRequests.set(reqId, { resolve, reject });
         });
@@ -160,21 +338,14 @@ app.get('/api/analisi-stagionale', async (req, res) => {
 
 // --- GESTIONE LIFECYCLE E AVVIO SERVER ---
 
-// Cattura l'uscita del processo (Ctrl+C, crash, stop del terminale) per pulire il file JSON
-process.on('SIGINT', () => { cancellaFileTemporaneo(); process.exit(0); });
+process.on('SIGINT',  () => { cancellaFileTemporaneo(); process.exit(0); });
 process.on('SIGTERM', () => { cancellaFileTemporaneo(); process.exit(0); });
-process.on('exit', () => { cancellaFileTemporaneo(); });
+process.on('exit',    () => { cancellaFileTemporaneo(); });
 
 (async () => {
-  // Esegue il preprocessing prima di avviare il server, in modo che sia pronto
-  await generaPreprocessingOffline();
+    await generaPreprocessingOffline();
 
-  app.listen(PORT, () => {
-    console.log(`Server in ascolto su http://localhost:${PORT}`);
-    
-    // Configura l'aggiornamento automatico ogni TOT minuti
-    setInterval(async () => {
-        await generaPreprocessingOffline();
-    }, MINUTI_AGGIORNAMENTO * 60 * 1000);
-  });
+    app.listen(PORT, () => {
+        console.log(`Server in ascolto su http://localhost:${PORT}`);
+    });
 })();

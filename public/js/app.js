@@ -138,14 +138,14 @@ function disegnaGraficoCartesiano(righeDb) {
                     const dettagliLabel = dataset.label.split(' | ');
                     
                     if (infoRiga) {
-                        alert(`📋 DETTAGLIO SELEZIONE:\n` +
+                        alert(`DETTAGLIO SELEZIONE:\n` +
                               `--------------------------------------------\n` +
                               `Mese Analizzato: ${nomiMesi[indiceMese]} (${dettagliLabel[1]})\n` +
                               `Reparto (Esteso): ${dataset.repartoEsteso}\n` +
                               `${dettagliLabel[2]}\n\n` +
-                              `📊 METRICHE SANITARIE LIVE:\n` +
-                              `• Letti Medi Occupati (Asse Y): ${parseFloat(infoRiga.media_letti_occupati).toFixed(1)}\n` +
-                              `• Numero Ricoveri Effettivi: ${infoRiga.numero_ricoveri}`);
+                              `METRICHE SANITARIE:\n` +
+                              `- Letti Medi Occupati (Asse Y): ${parseFloat(infoRiga.media_letti_occupati).toFixed(1)}\n` +
+                              `- Numero Ricoveri Effettivi: ${infoRiga.numero_ricoveri}`);
                     }
                 }
             },
