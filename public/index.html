@@ -1,15 +1,18 @@
 <!DOCTYPE html>
 <html lang="it">
+
 <head>
     <meta charset="UTF-8">
-    <title>Gestione Ospedale</title>
+    <title>Gestione ospedale</title>
     <link rel="icon" type="image/png" href="/img/logo.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="/css/style.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
+
 <body>
     <header>
         <h1 class="start">Gestione dell'ospedale</h1>
@@ -18,49 +21,56 @@
     <div id="sezione-split">
 
         <div class="colonna-form">
-            <div id="form-posti">
-                <h3>Analisi Ricoveri Stagionali</h3>
-
-                <div class="campo-input">
-                    <label>Seleziona Reparti:</label>
-                    <div id="container-reparti">
-                        <span class="testo-caricamento">Caricamento reparti...</span>
+            <div id="sezione-filtri">
+                <div id="form-posti">
+                    <h3>Analisi ricoveri stagionali</h3>
+                    <p>
+                        <up>*</up>: campo obbligatorio
+                    </p>
+                    <div class="campo-input">
+                        <div class="riga-anni">
+                            <div class="col-anno">
+                                <label for="data-inizio">Anno di inizio<up>*</up></label>
+                                <input type="number" id="data-inizio" min="1900" max="2100" placeholder="Es. 2018">
+                            </div>
+                            <div class="col-anno">
+                                <label for="data-fine">Anno di fine<up>*</up></label>
+                                <input type="number" id="data-fine" min="1900" max="2100" placeholder="Es. 2020">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="campo-input">
+                        <label>Seleziona reparti:</label>
+                        <div id="container-reparti">
+                            <span class="testo-caricamento">Caricamento reparti...</span>
+                        </div>
+                    </div>
+                    <div class="campo-input">
+                        <label>Diagnosi principali:</label>
+                        <div id="riga-ricerca-diagnosi">
+                            <input type="text" id="ricerca-diagnosi" placeholder="Es. Pneumonia, Sepsis...">
+                            <button id="btn-cerca-diagnosi">Cerca</button>
+                        </div>
+                        <div id="container-diagnosi">
+                            <span class="testo-caricamento">Cerca una diagnosi per aggiungerla...</span>
+                        </div>
                     </div>
                 </div>
-
-                <div class="campo-input">
-                    <label for="data-inizio">Anno Inizio:</label>
-                    <input type="number" id="data-inizio" min="1900" max="2100" placeholder="Es. 2018">
-                </div>
-
-                <div class="campo-input">
-                    <label for="data-fine">Anno Fine:</label>
-                    <input type="number" id="data-fine" min="1900" max="2100" placeholder="Es. 2020">
-                </div>
-
-                <div class="campo-input">
-                    <label for="nome-diagnosi">Diagnosi Principali (Scrivi e premi Invio):</label>
-                    <div id="wrapper-tag-diagnosi">
-                        <input type="text" id="nome-diagnosi" placeholder="Es. COVID, Sepsis...">
-                    </div>
-                </div>
+                <div id="diagnosi-selezionate"></div>
             </div>
+            <div id="heatmap-container"></div>
         </div>
 
         <div class="colonna-risultati">
             <div id="risultati-posti">
                 <div class="quadro-grafico">
-                    <div style="position: relative; height: 500px; width: 100%;">
+                    <div id="canvas-wrapper">
                         <canvas id="graficoCartesiano"></canvas>
                     </div>
                 </div>
             </div>
         </div>
 
-    </div>
-
-    <div style="margin: 0 40px 30px 40px; border-top: 2px solid #ddd; padding-top: 15px;">
-        <div id="heatmap-container"></div>
     </div>
 
     <footer>
@@ -77,4 +87,5 @@
     <script src="/js/spinner.js"></script>
     <script src="/js/app.js"></script>
 </body>
+
 </html>

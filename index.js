@@ -6,9 +6,10 @@ const readline = require('readline');
 const { Worker } = require('worker_threads');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = 8090;
 
 const CACHE_FILE = path.join(__dirname, 'public', 'temp', 'temp_analisi_stagionale.json');
+const DIAGNOSI_FILE = path.join(__dirname, 'public', 'temp', 'diagnosi.json');
 const CSV_DATASET = path.join(__dirname, 'public', 'data', 'dataset.csv');
 const CSV_REPARTI = path.join(__dirname, 'public', 'data', 'reparti.csv');
 
@@ -41,6 +42,8 @@ isWorkerReady = false;
 app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
+
+let diagnosiList = null;
 
 // --- REPARTI DA CSV (caricati una volta sola all'avvio) ---
 const repartiList = fs.readFileSync(CSV_REPARTI, 'utf-8')
@@ -271,6 +274,8 @@ async function generaPreprocessingOffline() {
         }));
 
         // Step 4: Salva il JSON e notifica il worker
+        diagnosiList = [...new Set(risultati.map(r => r.diagnosi))].sort();
+        fs.writeFileSync(DIAGNOSI_FILE, JSON.stringify(diagnosiList), 'utf-8');
         fs.writeFileSync(CACHE_FILE, JSON.stringify(risultati, null, 2), 'utf-8');
 
         isWorkerReady = false;
@@ -285,20 +290,28 @@ async function generaPreprocessingOffline() {
 // --- PULIZIA FILE TEMPORANEO ALLA CHIUSURA ---
 
 function cancellaFileTemporaneo() {
-    if (fs.existsSync(CACHE_FILE)) {
-        try {
-            fs.unlinkSync(CACHE_FILE);
-            console.log('\n[Server Shutdown] File JSON temporaneo rimosso con successo.');
-        } catch (err) {
-            console.error('Errore durante la rimozione del file temporaneo:', err);
+    for (const f of [CACHE_FILE, DIAGNOSI_FILE]) {
+        if (fs.existsSync(f)) {
+            try { fs.unlinkSync(f); }
+            catch (err) { console.error('Errore durante la rimozione del file temporaneo:', err); }
         }
     }
+    console.log('\n[Server shutdown] File temporanei rimossi.');
 }
 
 // --- ENDPOINT API ---
 
 app.get('/api/reparti', (_req, res) => {
     res.json(repartiList);
+});
+
+app.get('/api/diagnosi', (req, res) => {
+    if (!diagnosiList) return res.status(503).json({ error: 'Diagnosi non ancora disponibili.' });
+    const { q } = req.query;
+    if (!q || q.trim().length < 2) return res.json([]);
+    const lower = q.trim().toLowerCase();
+    const risultati = diagnosiList.filter(d => d.toLowerCase().includes(lower)).slice(0, 50);
+    res.json(risultati);
 });
 
 app.get('/api/analisi-stagionale', async (req, res) => {
@@ -338,9 +351,9 @@ app.get('/api/analisi-stagionale', async (req, res) => {
 
 // --- GESTIONE LIFECYCLE E AVVIO SERVER ---
 
-process.on('SIGINT',  () => { cancellaFileTemporaneo(); process.exit(0); });
-process.on('SIGTERM', () => { cancellaFileTemporaneo(); process.exit(0); });
-process.on('exit',    () => { cancellaFileTemporaneo(); });
+process.on('SIGINT',  () => process.exit(0));
+process.on('SIGTERM', () => process.exit(0));
+process.on('exit',    () => cancellaFileTemporaneo());
 
 (async () => {
     await generaPreprocessingOffline();

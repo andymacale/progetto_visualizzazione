@@ -1,41 +1,143 @@
 // SELEZIONE DEGLI ELEMENTI DOM
 const btnPosti = document.getElementById('btn-posti');
 const containerReparti = document.getElementById('container-reparti');
+const containerDiagnosi = document.getElementById('container-diagnosi');
+const inputRicercaDiagnosi = document.getElementById('ricerca-diagnosi');
+const diagnosiSelezionate = new Set();
 
 const inputDataInizio = document.getElementById('data-inizio');
 const inputDataFine = document.getElementById('data-fine');
-const inputDiagnosi = document.getElementById('nome-diagnosi');
 
-let chartCartesiano = null; 
+function validaAnno(val) {
+    return /^\d{4}$/.test(val);
+}
+
+function segnaErroreAnno(input, errore) {
+    input.classList.toggle('input-errore', errore);
+}
+
+function salvaFiltri() {
+    const repartiScelti = Array.from(document.querySelectorAll('.cb-reparto:checked')).map(cb => cb.value);
+    localStorage.setItem('visFiltri', JSON.stringify({
+        annoInizio: inputDataInizio.value,
+        annoFine: inputDataFine.value,
+        reparti: repartiScelti,
+        diagnosi: [...diagnosiSelezionate]
+    }));
+}
+
+function ripristinaFiltri() {
+    try { return JSON.parse(localStorage.getItem('visFiltri') || 'null'); }
+    catch { return null; }
+}
+
+let chartCartesiano = null;
 
 async function caricaReparti() {
     try {
         const response = await fetch('/api/reparti');
         const reparti = await response.json();
         containerReparti.innerHTML = '';
+        const salvati = ripristinaFiltri();
+        const repartiSalvati = new Set(salvati?.reparti || []);
         reparti.forEach(r => {
+            const checked = repartiSalvati.has(r.reparto) ? 'checked' : '';
             containerReparti.innerHTML += `
-                <label style="display:flex; align-items:center; gap:10px; margin-bottom:8px; font-size:13px; cursor:pointer; width:100%;">
-                    <input type="checkbox" class="cb-reparto" value="${r.reparto}" style="width:auto; margin:0; cursor:pointer;"> 
+                <label style="display:flex; align-items:center; gap:10px; margin-bottom:8px; font-size:14px; cursor:pointer; width:100%;">
+                    <input type="checkbox" class="cb-reparto" value="${r.reparto}" ${checked} style="width:auto; margin:0; cursor:pointer;">
                     <span style="flex:1; white-space:normal; line-height:1.2; color:#333;">${r.reparto}</span>
                 </label>`;
         });
+        if (inputDataInizio.value.trim() && inputDataFine.value.trim()) {
+            ricaricaDati('posti');
+        }
     } catch (e) { console.error("Errore caricamento reparti:", e); }
+}
+
+// Ripristino sincrono di anni e diagnosi prima del caricamento asincrono dei reparti
+const _filtriSalvati = ripristinaFiltri();
+if (_filtriSalvati) {
+    if (_filtriSalvati.annoInizio) inputDataInizio.value = _filtriSalvati.annoInizio;
+    if (_filtriSalvati.annoFine) inputDataFine.value = _filtriSalvati.annoFine;
+    if (_filtriSalvati.diagnosi?.length) {
+        _filtriSalvati.diagnosi.forEach(d => diagnosiSelezionate.add(d));
+    }
 }
 caricaReparti();
 
-// Avvio automatico se entrambi gli anni sono già impostati (nel caso di refresh)
-setTimeout(() => {
-    if (inputDataInizio.value.trim() && inputDataFine.value.trim()) {
-        ricaricaDati('posti');
+const containerChipsDiagnosi = document.getElementById('diagnosi-selezionate');
+
+function renderChipsDiagnosi() {
+    if (diagnosiSelezionate.size === 0) {
+        containerChipsDiagnosi.innerHTML = '';
+        return;
     }
-}, 400);
+    containerChipsDiagnosi.innerHTML = [...diagnosiSelezionate]
+        .map(d => `<span class="chip-diagnosi">
+            ${d}
+            <span class="chip-rimuovi" data-diagnosi="${d}">&times;</span>
+        </span>`)
+        .join('');
+}
+
+// Mostra le chip delle diagnosi restaurate dal localStorage
+if (diagnosiSelezionate.size > 0) renderChipsDiagnosi();
+
+function aggiornaDopoDiagnosi() {
+    salvaFiltri();
+    renderChipsDiagnosi();
+    if (inputDataInizio.value.trim() && inputDataFine.value.trim()) {
+        eseguiConDebounce(() => ricaricaDati('posti'), 0);
+    }
+}
+
+containerDiagnosi.addEventListener('change', (e) => {
+    if (!e.target.classList.contains('cb-diagnosi')) return;
+    if (e.target.checked) diagnosiSelezionate.add(e.target.value);
+    else diagnosiSelezionate.delete(e.target.value);
+    aggiornaDopoDiagnosi();
+});
+
+containerChipsDiagnosi.addEventListener('click', (e) => {
+    const chip = e.target.closest('.chip-rimuovi');
+    if (!chip) return;
+    const d = chip.dataset.diagnosi;
+    diagnosiSelezionate.delete(d);
+    const cb = containerDiagnosi.querySelector(`.cb-diagnosi[value="${CSS.escape(d)}"]`);
+    if (cb) cb.checked = false;
+    aggiornaDopoDiagnosi();
+});
+
+async function cercaDiagnosi() {
+    const q = inputRicercaDiagnosi.value.trim();
+    if (q.length < 2) {
+        containerDiagnosi.innerHTML = '<span class="testo-caricamento">Inserisci almeno 2 caratteri</span>';
+        return;
+    }
+    try {
+        const res = await fetch(`/api/diagnosi?q=${encodeURIComponent(q)}`);
+        const lista = await res.json();
+        if (!lista.length) {
+            containerDiagnosi.innerHTML = '<span class="testo-caricamento">Nessuna diagnosi trovata</span>';
+            return;
+        }
+        containerDiagnosi.innerHTML = lista
+            .map(d => `<label style="display:flex; align-items:center; gap:10px; margin-bottom:8px; font-size:14px; cursor:pointer; width:100%;">
+                    <input type="checkbox" class="cb-diagnosi" value="${d}" ${diagnosiSelezionate.has(d) ? 'checked' : ''} style="width:auto; margin:0; cursor:pointer;">
+                    <span style="flex:1; white-space:normal; line-height:1.2; color:#333;">${d}</span>
+                </label>`)
+            .join('');
+    } catch (e) { console.error("Errore ricerca diagnosi:", e); }
+}
+
+document.getElementById('btn-cerca-diagnosi').addEventListener('click', cercaDiagnosi);
+inputRicercaDiagnosi.addEventListener('keydown', (e) => { if (e.key === 'Enter') cercaDiagnosi(); });
 
 // COSTRUZIONE DELL'ISTOGRAMMA RAGGRUPPATO
 function disegnaGraficoCartesiano(righeDb) {
     if (chartCartesiano) chartCartesiano.destroy();
 
-    const nomiMesi = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
+    const nomiMesi = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
     
     // Configurazione Colori (Sincronizzata per Grafico e Legenda)
     const coloriReparti = {
@@ -183,22 +285,19 @@ function disegnaGraficoCartesiano(righeDb) {
                 }
             },
             scales: {
-                x: { 
+                x: {
                     stacked: true,
-                    grid: { 
-                        display: true,          
-                        offset: true,           
-                        drawOnChartArea: true,  
-                        drawTicks: true,        
-                        color: 'rgba(0, 0, 0, 0.12)', 
-                        lineWidth: 1            
-                    },
-                    title: { display: true, text: 'Mesi di Riferimento', font: { weight: 'bold', size: 11 } } 
+                    grid: { display: false },
+                    title: { display: true, text: 'Mesi di riferimento', font: { weight: 'bold', size: 11 } }
                 },
-                y: { 
+                y: {
                     stacked: true,
-                    beginAtZero: true, 
-                    title: { display: true, text: 'Letti Medi Occupati', font: { weight: 'bold', size: 11 } } 
+                    beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.3)',
+                        lineWidth: 3
+                    },
+                    title: { display: true, text: 'Media letti occupati', font: { weight: 'bold', size: 11 } }
                 }
             }
         }
@@ -256,15 +355,15 @@ function generoHeatmapLegenda(righeDb, anniUnici, coloriReparti, malattieUniche)
 
     // INTESTAZIONE FISSA 
     let htmlMappa = `
-        <div class="heatmap-titolo" style="margin-top: 10px; margin-bottom: 12px;"> Legenda Anni e Volume Ricoveri Totale (Pazienti)</div>
+        <div class="heatmap-titolo" style="margin-top: 10px; margin-bottom: 12px;">Legenda anni e volume ricoveri totale (pazienti)</div>
         <div class="heatmap-griglia">
             
             <div class="heatmap-riga" style="margin-bottom: 8px; padding-bottom: 6px; border-bottom: 2px solid #eee; padding-right: 12px;">
-                <div class="heatmap-etichetta-reparto" style="font-weight: bold; color: #333; flex: 0 0 200px;">Reparto e Diagnosi</div>
+                <div class="heatmap-etichetta-reparto" style="font-weight: bold; color: #333; flex: 0 0 200px;">Reparto e diagnosi</div>
                 <div class="heatmap-celle-mesi">`;
                 
     anniUnici.forEach(anno => {
-        htmlMappa += `<div style="flex: 1; font-size: 11px; font-weight: bold; text-align: center; color: #444;">Anno ${anno}</div>`;
+        htmlMappa += `<div style="flex: 1; font-size: 11px; font-weight: bold; text-align: center; color: #444;">${anno}</div>`;
     });
 
     htmlMappa += `</div></div>`;
@@ -314,45 +413,6 @@ function generoHeatmapLegenda(righeDb, anniUnici, coloriReparti, malattieUniche)
     containerHeatmap.innerHTML = htmlMappa;
 }
 
-let diagnosiScelte = [];
-const wrapperTagDiagnosi = document.getElementById('wrapper-tag-diagnosi');
-
-wrapperTagDiagnosi.addEventListener('click', () => inputDiagnosi.focus());
-
-function renderizzaTag() {
-    const vecchiTag = wrapperTagDiagnosi.querySelectorAll('.tag-chip');
-    vecchiTag.forEach(t => t.remove());
-
-    diagnosiScelte.forEach((malattia, indice) => {
-        const chip = document.createElement('span');
-        chip.className = 'tag-chip';
-        chip.style.cssText = "background-color: #e6f2ff; color: #007BFF; padding: 4px 10px; border-radius: 4px; font-size: 12px; font-weight: bold; display: flex; align-items: center; gap: 8px; border: 1px solid #b3d7ff; user-select: none;";
-        chip.innerHTML = `
-            ${malattia}
-            <span style="cursor:pointer; color:#ff4d4d; font-size: 14px; font-weight:bold; transition: 0.2s;" onmouseover="this.style.color='#cc0000'" onmouseout="this.style.color='#ff4d4d'" onclick="rimuoviTag(${indice})">&times;</span>
-        `;
-        wrapperTagDiagnosi.insertBefore(chip, inputDiagnosi);
-    });
-}
-
-window.rimuoviTag = function(indice) {
-    diagnosiScelte.splice(indice, 1);
-    renderizzaTag();
-    ricaricaDati('posti');
-};
-
-inputDiagnosi.addEventListener('keyup', (e) => {
-    if (e.key === 'Enter') {
-        const valore = inputDiagnosi.value.trim();
-        if (valore && !diagnosiScelte.includes(valore)) {
-            diagnosiScelte.push(valore);
-            inputDiagnosi.value = '';
-            renderizzaTag();
-            ricaricaDati('posti');
-        }
-    }
-});
-
 // RICHIESTA DATI AL SERVER E AGGREGAZIONE MALATTIE SIMILI
 async function ricaricaDati(sezioneDati) {
     if (sezioneDati !== 'posti') return;
@@ -365,15 +425,22 @@ async function ricaricaDati(sezioneDati) {
         return;
     }
 
+    if (!validaAnno(valoreInizioRaw) || !validaAnno(valoreFineRaw)) {
+        mostraMessaggioGrafico("Anno non valido — deve essere composto da 4 cifre");
+        return;
+    }
+
     if (typeof mostraSpinner === 'function') mostraSpinner();
+    await new Promise(r => setTimeout(r, 0));
 
     try {
         const repartiScelti = Array.from(document.querySelectorAll('.cb-reparto:checked')).map(cb => cb.value);
+        const diagnosiScelte = [...diagnosiSelezionate];
 
         const parametri = new URLSearchParams();
         parametri.append('dataInizio', valoreInizioRaw);
         parametri.append('dataFine', valoreFineRaw);
-        
+
         diagnosiScelte.forEach(d => parametri.append('diagnosi', d));
         repartiScelti.forEach(r => parametri.append('reparto', r));
 
@@ -386,15 +453,7 @@ async function ricaricaDati(sezioneDati) {
             const mappaAggregata = {};
             
             righeDbRaw.forEach(riga => {
-                let nomeMalattia = riga.diagnosi_principali;
-                
-                if (diagnosiScelte.length > 0) {
-                    const tagTrovato = diagnosiScelte.find(tag => 
-                        riga.diagnosi_principali.toLowerCase().includes(tag.toLowerCase())
-                    );
-                    if (tagTrovato) nomeMalattia = tagTrovato.toUpperCase(); 
-                }
-                
+                const nomeMalattia = riga.diagnosi_principali;
                 const chiaveUnica = `${riga.mese_riferimento}_${riga.reparto}_${nomeMalattia}`;
                 
                 if (!mappaAggregata[chiaveUnica]) {
@@ -424,13 +483,21 @@ async function ricaricaDati(sezioneDati) {
 }
 
 containerReparti.addEventListener('change', () => {
+    salvaFiltri();
     if (inputDataInizio.value.trim() && inputDataFine.value.trim()) {
         eseguiConDebounce(() => ricaricaDati('posti'), 400);
     }
 });
 
 function gestisciInputAnni() {
-    if (inputDataInizio.value.trim() && inputDataFine.value.trim()) {
+    const inizio = inputDataInizio.value.trim();
+    const fine = inputDataFine.value.trim();
+    const inizioOk = !inizio || validaAnno(inizio);
+    const fineOk = !fine || validaAnno(fine);
+    segnaErroreAnno(inputDataInizio, inizio.length >= 4 && !inizioOk);
+    segnaErroreAnno(inputDataFine, fine.length >= 4 && !fineOk);
+    salvaFiltri();
+    if (inizio && fine && inizioOk && fineOk) {
         eseguiConDebounce(() => ricaricaDati('posti'), 400);
     }
 }
