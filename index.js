@@ -45,7 +45,6 @@ app.use(express.static('public'));
 
 let diagnosiList = null;
 
-// --- REPARTI DA CSV (caricati una volta sola all'avvio) ---
 const repartiList = fs.readFileSync(CSV_REPARTI, 'utf-8')
     .split('\n')
     .slice(1)
@@ -53,9 +52,7 @@ const repartiList = fs.readFileSync(CSV_REPARTI, 'utf-8')
     .filter(l => l.length > 0)
     .map(r => ({ reparto: r }));
 
-// --- UTILITÀ CSV ---
 
-// Parser di una singola riga CSV con gestione dei campi tra virgolette
 function parseCSVLine(line) {
     const fields = [];
     let i = 0;
@@ -80,7 +77,6 @@ function parseCSVLine(line) {
     return fields;
 }
 
-// Parser dell'array PostgreSQL: {"val1","val2",...} → ['val1', 'val2', ...]
 function parsePgArray(str) {
     if (!str || str.trim() === '' || str.toUpperCase() === 'NULL' || str === '{}') return [];
     const inner = str.slice(1, -1).trim();
@@ -112,35 +108,20 @@ function parsePgArray(str) {
     return results;
 }
 
-// Numero di giorni in un mese (gestisce anni bisestili per febbraio)
 function giorniMese(anno, mese) {
     return new Date(Date.UTC(anno, mese, 0)).getUTCDate();
 }
 
-// Converte "YYYY-MM-DD HH:MM:SS" in numero di giorni dall'epoch UTC
 function dataAdGiornoEpoch(dateStr) {
     const datePart = dateStr.split(' ')[0].trim();
     const [y, m, d] = datePart.split('-').map(Number);
     return Math.floor(Date.UTC(y, m - 1, d) / 86400000);
 }
 
-// --- CALCOLO OCCUPAZIONE MENSILE ---
-//
-// Per ogni periodo di occupazione di un posto letto [in_g, out_g):
-//   - Il giorno di OUT NON è contato (running sum: +1 al giorno IN, -1 al giorno OUT,
-//     quindi a fine giornata OUT il contatore torna a 0)
-//   - L'ultimo giorno occupato = out_g - 1  (o globalMaxGiorno se non c'è OUT)
-//
-// Per ogni mese, si calcola:
-//   posti_medi = somma(giorni-letto sovrapposti al mese) / giorni_del_mese
-//
-// Questo è equivalente a calcolare, giorno per giorno, il running sum dei posti
-// occupati e poi dividerlo per i giorni del mese.
 
 function aggiungiPeriodo(monthlyBuckets, reparto, in_g, out_g, diagnosi, globalMaxGiorno) {
     const ultimoGiorno = out_g !== null ? out_g - 1 : globalMaxGiorno;
 
-    // Caso degenerato: dimissione nello stesso giorno del ricovero → 0 posti-giorno, 1 ricovero
     if (ultimoGiorno < in_g) {
         const startDate = new Date(in_g * 86400000);
         const anno = startDate.getUTCFullYear();
@@ -190,7 +171,6 @@ function aggiungiPeriodo(monthlyBuckets, reparto, in_g, out_g, diagnosi, globalM
     }
 }
 
-// --- PREPROCESSING OFFLINE DA CSV ---
 
 async function generaPreprocessingOffline() {
     console.log(`[${new Date().toLocaleTimeString()}] Avvio del preprocessing offline da CSV...`);
@@ -198,7 +178,6 @@ async function generaPreprocessingOffline() {
         const bedEvents = {};
         let globalMaxGiorno = 0;
 
-        // Step 1: Lettura riga per riga del CSV (efficiente anche su file grandi)
         await new Promise((resolve, reject) => {
             const rl = readline.createInterface({
                 input: fs.createReadStream(CSV_DATASET, { encoding: 'utf8' }),
@@ -232,11 +211,7 @@ async function generaPreprocessingOffline() {
             rl.on('error', reject);
         });
 
-        // Step 2: Abbina IN/OUT per ogni posto letto e calcola contributi mensili
-        //
-        // Gli eventi di ogni letto sono ordinati per data e abbinati in coppie
-        // IN → OUT (o IN senza OUT per pazienti ancora ricoverati).
-        // Per ogni coppia si calcola la sovrapposizione con ciascun mese del calendario.
+       
         const monthlyBuckets = {};
 
         for (const { reparto, eventi } of Object.values(bedEvents)) {
@@ -247,7 +222,6 @@ async function generaPreprocessingOffline() {
             for (const e of eventi) {
                 if (e.tipo === 'IN') {
                     if (pendingIn !== null) {
-                        // IN senza OUT precedente: aggiungiamo comunque il periodo
                         aggiungiPeriodo(monthlyBuckets, reparto, pendingIn.giorno, null, pendingIn.diagnosi, globalMaxGiorno);
                     }
                     pendingIn = e;
@@ -263,7 +237,6 @@ async function generaPreprocessingOffline() {
             }
         }
 
-        // Step 3: Converti i bucket nel formato atteso dal worker
         const risultati = Object.values(monthlyBuckets).map(b => ({
             anno:             b.anno,
             mese:             b.mese,
@@ -273,7 +246,6 @@ async function generaPreprocessingOffline() {
             numero_ricoveri:  b.ricoveri
         }));
 
-        // Step 4: Salva il JSON e notifica il worker
         diagnosiList = [...new Set(risultati.map(r => r.diagnosi))].sort();
         fs.writeFileSync(DIAGNOSI_FILE, JSON.stringify(diagnosiList), 'utf-8');
         fs.writeFileSync(CACHE_FILE, JSON.stringify(risultati, null, 2), 'utf-8');
@@ -287,7 +259,6 @@ async function generaPreprocessingOffline() {
     }
 }
 
-// --- PULIZIA FILE TEMPORANEO ALLA CHIUSURA ---
 
 function cancellaFileTemporaneo() {
     for (const f of [CACHE_FILE, DIAGNOSI_FILE]) {
@@ -299,7 +270,6 @@ function cancellaFileTemporaneo() {
     console.log('\n[Server shutdown] File temporanei rimossi.');
 }
 
-// --- ENDPOINT API ---
 
 app.get('/api/reparti', (_req, res) => {
     res.json(repartiList);
@@ -349,7 +319,6 @@ app.get('/api/analisi-stagionale', async (req, res) => {
     }
 });
 
-// --- GESTIONE LIFECYCLE E AVVIO SERVER ---
 
 process.on('SIGINT',  () => process.exit(0));
 process.on('SIGTERM', () => process.exit(0));

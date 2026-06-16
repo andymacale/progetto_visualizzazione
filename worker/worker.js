@@ -28,7 +28,6 @@ parentPort.on('message', (msg) => {
         try {
             let topDiagnosi = null;
             if (!diagnosiFiltro || diagnosiFiltro.length === 0) {
-                // Calcola le top 5 malattie (per non far esplodere il frontend e replicare la logica originale)
                 const conteggi = {};
                 cacheDati.forEach(item => {
                     if (dataInizio && item.anno < dataInizio) return;
@@ -43,7 +42,6 @@ parentPort.on('message', (msg) => {
                     .map(e => e[0].toLowerCase());
             }
 
-            // 1. Applichiamo i filtri nativi di JavaScript sull'array JSON in memoria
             let datiFiltrati = cacheDati.filter(item => {
                 if (dataInizio && item.anno < dataInizio) return false;
                 if (dataFine && item.anno > dataFine) return false;
@@ -55,16 +53,13 @@ parentPort.on('message', (msg) => {
                     );
                     if (!match) return false;
                 } else if (topDiagnosi) {
-                    // Mantiene solo le top 5
                     if (!topDiagnosi.includes(item.diagnosi.toLowerCase())) return false;
                 }
                 return true;
             });
 
-            // 2. Rilavorazione per l'istogramma a pila
             const mappaAggregata = {};
             datiFiltrati.forEach(item => {
-                // Invece di perdere la diagnosi, raggruppiamo anche per diagnosi
                 const chiave = `${item.anno}-${item.mese}-${item.reparto}-${item.diagnosi}`;
                 if (!mappaAggregata[chiave]) {
                     mappaAggregata[chiave] = {

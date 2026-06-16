@@ -1,4 +1,3 @@
-// SELEZIONE DEGLI ELEMENTI DOM
 const btnPosti = document.getElementById('btn-posti');
 const containerReparti = document.getElementById('container-reparti');
 const containerDiagnosi = document.getElementById('container-diagnosi');
@@ -54,7 +53,6 @@ async function caricaReparti() {
     } catch (e) { console.error("Errore caricamento reparti:", e); }
 }
 
-// Ripristino sincrono di anni e diagnosi prima del caricamento asincrono dei reparti
 const _filtriSalvati = ripristinaFiltri();
 if (_filtriSalvati) {
     if (_filtriSalvati.annoInizio) inputDataInizio.value = _filtriSalvati.annoInizio;
@@ -80,7 +78,6 @@ function renderChipsDiagnosi() {
         .join('');
 }
 
-// Mostra le chip delle diagnosi restaurate dal localStorage
 if (diagnosiSelezionate.size > 0) renderChipsDiagnosi();
 
 function aggiornaDopoDiagnosi() {
@@ -133,13 +130,11 @@ async function cercaDiagnosi() {
 document.getElementById('btn-cerca-diagnosi').addEventListener('click', cercaDiagnosi);
 inputRicercaDiagnosi.addEventListener('keydown', (e) => { if (e.key === 'Enter') cercaDiagnosi(); });
 
-// COSTRUZIONE DELL'ISTOGRAMMA RAGGRUPPATO
 function disegnaGraficoCartesiano(righeDb) {
     if (chartCartesiano) chartCartesiano.destroy();
 
     const nomiMesi = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
     
-    // Configurazione Colori (Sincronizzata per Grafico e Legenda)
     const coloriReparti = {
         'Medical Intensive Care Unit (MICU)': '#007BFF', 
         'Trauma SICU (TSICU)': '#DC3545',               
@@ -148,8 +143,8 @@ function disegnaGraficoCartesiano(righeDb) {
         'Cardiac Vascular Intensive Care Unit (CVICU)': '#6F42C1',
         'Neuro Intermediate': '#FD7E14',
         'Surgical Intensive Care Unit (SICU)': '#20C997',
-        'Intensive Care Unit (ICU)': '#E83E8C', // Fucsia
-        'Medicine': '#17A2B8'                   // Ciano
+        'Intensive Care Unit (ICU)': '#E83E8C', 
+        'Medicine': '#17A2B8'                   
     };
 
     const acronimiReparti = {
@@ -214,7 +209,6 @@ function disegnaGraficoCartesiano(righeDb) {
         };
     });
 
-    // Ordinamento alfabetico per Reparto per impilare il grafico in modo coerente
     datasets.sort((a, b) => a.repartoEsteso.localeCompare(b.repartoEsteso));
 
     const ctx = document.getElementById('graficoCartesiano').getContext('2d');
@@ -303,15 +297,12 @@ function disegnaGraficoCartesiano(righeDb) {
         }
     });
 
-    // Avviamo la Legenda Visiva Universale!
     generoHeatmapLegenda(righeDb, anniUnici, coloriReparti, malattieUniche);
 }
 
-// Funzione per scurire i colori: dall'anno più vecchio (molto scuro) all'anno più recente (colore vivido originale)
 function sfumaColoreDaScuro(hex, indice, totElementi) {
     if (totElementi <= 1) return hex;
     
-    // Il fattore varia da 0.35 (scuro) a 1.0 (vivido base)
     const factor = 0.35 + (0.65 * (indice / (totElementi - 1)));
     
     let R = parseInt(hex.substring(1, 3), 16);
@@ -335,7 +326,6 @@ function generoHeatmapLegenda(righeDb, anniUnici, coloriReparti, malattieUniche)
 
     const aggregati = {};
 
-    // 1. Raggruppiamo i dati
     righeDb.forEach(riga => {
         const anno = new Date(riga.mese_riferimento).getFullYear();
         const reparto = riga.reparto;
@@ -353,7 +343,6 @@ function generoHeatmapLegenda(righeDb, anniUnici, coloriReparti, malattieUniche)
         }
     });
 
-    // INTESTAZIONE FISSA 
     let htmlMappa = `
         <div class="heatmap-titolo" style="margin-top: 10px; margin-bottom: 12px;">Legenda anni e volume ricoveri totale (pazienti)</div>
         <div class="heatmap-griglia">
@@ -368,7 +357,6 @@ function generoHeatmapLegenda(righeDb, anniUnici, coloriReparti, malattieUniche)
 
     htmlMappa += `</div></div>`;
 
-    // 3. CONTENITORE SCORREVOLE (Qui dentro vanno i dati)
     htmlMappa += `<div class="heatmap-righe-scroll">`;
 
     Object.keys(aggregati).forEach(chiave => {
@@ -413,7 +401,6 @@ function generoHeatmapLegenda(righeDb, anniUnici, coloriReparti, malattieUniche)
     containerHeatmap.innerHTML = htmlMappa;
 }
 
-// RICHIESTA DATI AL SERVER E AGGREGAZIONE MALATTIE SIMILI
 async function ricaricaDati(sezioneDati) {
     if (sezioneDati !== 'posti') return;
     
@@ -505,7 +492,6 @@ function gestisciInputAnni() {
 inputDataInizio.addEventListener('input', gestisciInputAnni);
 inputDataFine.addEventListener('input', gestisciInputAnni);
 
-// FUNZIONE DI UTILITÀ PER MESSAGGI DI ERRORE
 function mostraMessaggioGrafico(messaggio) {
     if (chartCartesiano) {
         chartCartesiano.destroy();
@@ -519,7 +505,6 @@ function mostraMessaggioGrafico(messaggio) {
 
     const canvas = document.getElementById('graficoCartesiano');
     if (canvas) {
-        // Sincronizza la risoluzione interna del canvas con le dimensioni CSS del contenitore
         canvas.width = canvas.parentElement.clientWidth || 800;
         canvas.height = canvas.parentElement.clientHeight || 400;
 
