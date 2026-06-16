@@ -5,6 +5,7 @@ L'applicazione è un sistema di visualizzazione delle informazioni implementato 
 ![istogramma](immagini/istogramma.png)
 ## Linguaggi utilizzati
 I linguaggi utilizzati sono i seguenti:
+
 * per il backend, è stato usato Node.js ed Express;
 * per il frontend, HTML + CSS e Javascript;
 * per la visualizzazione, la libreria Chart.js;
@@ -25,16 +26,20 @@ Infine, sono state implementate delle API REST, per restituire il risultato dell
 | `/api/analisi-stagionale` | Dati filtrati per anno (obbligatorio), reparto e/o diagnosi |
 ## Filtri
 Come già accennato, l'interfaccia permette tre tipologie di filtri:
+
 * intervallo degli anni, che accetta solo campi numerici a 4 cifre, implementando delle espressioni regolari, ed è un campo obbligatorio;
 * reparti, che sono delle checkbox caricate dall'API, se è vuoto vengono selezionati tutti;
-* diagnosi, con ricerca testuale, checkbox e visualizzazione come chip rimuovibili, se è vuoto vengono mostrate tutte le diagnosi.<br>
+* diagnosi, con ricerca testuale, checkbox e visualizzazione come chip rimuovibili, se è vuoto vengono mostrate tutte le diagnosi.
+
 Inoltre, i filtri selezionati vengono salvati automaticamente e ripristinati all'avvio della pagina.
 ## Grafico e legenda
 Come grafico è stato implementato un istogramma a pila, dove:
+
 * sulle ascisse sono mostrati i dodici mesi dell'anno;
 * sulle ordinate il numero medio di letti occupati, cumulati per reparto/diagnosi;
 * ogni reparto ha una colorazione diversa, sfruttando la sfumatura per ogni anno;
-* le diagnosi successive alla prima usano bordi tratteggiati per distinguersi visivamente.<br>
+* le diagnosi successive alla prima usano bordi tratteggiati per distinguersi visivamente.
+
 Inoltre, cliccando su una barra, viene mostrato un alert con i dettagli completi per quel mese.<br>
 Infine, come legenda viene mostrata una tabella heatmap, sfruttando una sequential colormap, mostrando per ogni coppia (reparto, diagnosi) il numero totale dei ricoveri per quel anno.
 ## Struttura del progetto
