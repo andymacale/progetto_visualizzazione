@@ -35,6 +35,7 @@ Come grafico è stato implementato un istogramma a pila, dove:
 Inoltre, cliccando su una barra, viene mostrato un alert con i dettagli completi per quel mese.<br>
 Infine, come legenda viene mostrata una tabella heatmap, sfruttando una sequential colormap, mostrando per ogni coppia (reparto, diagnosi) il numero totale dei ricoveri per quel anno.
 ## Struttura del progetto
+```text
 progetto_visualizzazione/
 ├── node_modules/             # Librerie importate
 ├── index.js                  # Server Express + preprocessing
@@ -52,8 +53,9 @@ progetto_visualizzazione/
 │   │   └── reparti.csv       # Elenco reparti
 │   └── temp/                 # File JSON generati a runtime (gitignored)
 └── package.json
+```
 Per avviare il progetto, basta posizionarsi sulla cartella del progetto, e digitare da terminale il comando<br>
-<center>`node index.js`<\center><br> 
+`node index.js`<br> 
 ed una volta fatto ciò, viene effettuato il preprocessing offline e quando verrà mostrato `Server in ascolto su http://localhost:8090`.
 
 
