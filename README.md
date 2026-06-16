@@ -1,7 +1,7 @@
 # Progetto di Visualizzazione delle Informazioni
 ## Andrea Macale (matricola 560793)
 
-L'applicazione è un sistema di visualizzazione delle informazioni implementato su interfaccia Web, che rappresenta l'occupazione media mensile dei letti, inserendo un intervallo di anni. L'utente finale può inoltre usare dei filtri, inserendo uno o più reparti; ed una o più diagnosi. Come sistema di visualizzazione, è stato implementato un istogramma a pila, per poter confrontare l'occupazione letti della stessa diagnosi, mese e reparto in due o più anni differenti.
+L'applicazione è un sistema di visualizzazione delle informazioni implementato su interfaccia Web, che rappresenta l'occupazione media mensile dei letti, inserendo un intervallo di anni. L'utente finale può inoltre usare dei filtri, inserendo uno o più reparti; ed una o più diagnosi. Come sistema di visualizzazione, è stato usato un istogramma a pila, per poter confrontare l'occupazione letti della stessa diagnosi, mese e reparto in due o più anni differenti.
 ![istogramma](immagini/istogramma.png)
 ## Linguaggi utilizzati
 I linguaggi utilizzati sono i seguenti:
@@ -13,7 +13,10 @@ I linguaggi utilizzati sono i seguenti:
 All'avvio, siccome la quantità di dati è enorme, è stato scelto un preprocessing offline, che legge `dataset.csv` ed elabora un file `.json` temporaneo, che calcola i posti medi ed il numero di ricoveri. Poi è stato implementato un worker che carica il file temporaneo in memoria centrale, per evitare rallementi eccessivi durante la fase di filtraggio.<br>
 Di seguito, sono riportate i primi 13 record, per comprendere il funzionamento dell'algoritmo.
 ![dataset](immagini/dataset.png)
-In particolare, ogni ingresso per reparto gli viene identificativo un numero posto letto progressivo con tipo IN, mentre ad ogni uscita viene preso l'identificativo  con tipo OUT, così quel posto letto può essere riutilizzato per un nuovo paziente. Poi per ogni giorno e reparto, vengono presi i record a cui gli viene sommato 1 se il tipo è IN, sottratto 1 se il tipo è OUT, ottenendo così il numero di posti letto occupati per quel giorno. Infine, per il mese di riferimento, si sommano tutti questi valori ottenuti e si divide per il numero di giorni di quel mese (es. gennaio 31, febbraio 28/29, ecc.), calcolando il numero di posti letto medi occupati per quel mese.<br>
+In particolare, ad ogni ingresso per reparto gli viene identificativo un numero posto letto progressivo con tipo IN, mentre ad ogni uscita viene preso l'identificativo  con tipo OUT, così quel posto letto può essere assegnato nuovamente ad un nuovo paziente. Poi, per ogni giorno e reparto, vengono presi i record a cui: 
+* gli viene sommato 1 se il tipo è IN, 
+* sottratto 1 se il tipo è OUT;
+ottenendo così il numero di posti letto occupati per quel giorno. Infine, per il mese di riferimento, si sommano tutti questi valori ottenuti e si divide per il numero di giorni di quel mese (es. gennaio 31, febbraio 28/29, ecc.), calcolando il numero di posti letto medi occupati per quel mese.<br>
 Infine, sono state implementate delle API REST, per restituire il risultato delle interrogazioni.
 | Link | Descrizione |
 | :--- | :--- |
@@ -37,6 +40,7 @@ Infine, come legenda viene mostrata una tabella heatmap, sfruttando una sequenti
 ## Struttura del progetto
 ```text
 progetto_visualizzazione/
+├── node_modules/            # Immagini per il README.md
 ├── node_modules/            # Librerie importate
 ├── worker/
 │   └── worker.js            # Worker Thread per le query
@@ -54,7 +58,8 @@ progetto_visualizzazione/
 ├── index.js                 # Server Express + preprocessing
 ├── package-lock.json
 └── package.json
-
+└── .gitignore
+└── .gitattributes
 ```
 Per avviare il progetto, basta posizionarsi sulla cartella del progetto, e digitare da terminale il comando
 <div align="center"><code>node index.js</code></div> 
