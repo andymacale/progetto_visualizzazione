@@ -1,7 +1,7 @@
 # Progetto di Visualizzazione delle Informazioni
 ## Andrea Macale (matricola 560793)
 
-L'applicazione è un sistema di visualizzazione delle informazioni implementato su interfaccia Web, che rappresenta l'occupazione media mensile dei letti, inserendo un intervallo di anni. L'utente finale può inoltre usare dei filtri, inserendo uno o più reparti; ed una o più diagnosi. Come sistema di visualizzazione, è stato implementato un'istogramma a pila, per poter confrontare l'occupazione letti della stessa diagnosi, mese e reparto in due o più anni differenti.
+L'applicazione è un sistema di visualizzazione delle informazioni implementato su interfaccia Web, che rappresenta l'occupazione media mensile dei letti, inserendo un intervallo di anni. L'utente finale può inoltre usare dei filtri, inserendo uno o più reparti; ed una o più diagnosi. Come sistema di visualizzazione, è stato implementato un istogramma a pila, per poter confrontare l'occupazione letti della stessa diagnosi, mese e reparto in due o più anni differenti.
 ![istogramma](immagini/istogramma.png)
 ## Linguaggi utilizzati
 I linguaggi utilizzati sono i seguenti:
@@ -20,6 +20,42 @@ Infine, sono state implementate delle API REST, per restituire il risultato dell
 | `/api/reparti` | Restituisce l'elenco dei reparti da `reparti.csv`|
 | `/api/diagnosi?q=` | Ricerca delle diagnosi |
 | `/api/analisi-stagionale` | Dati filtrati per anno (obbligatorio), reparto e/o diagnosi |
+## Filtri
+Come già accennato, l'interfaccia permette tre tipologie di filtri:
+* intervallo degli anno, che accetta solo campi numerici a 4 cifre, implementando delle espressioni regolari, ed è un campo obbligatorio;
+* reparti, che sono delle checkbox caricate dall'API, se è vuoto vengono selezionati tutti;
+* diagnosi, con ricerca testuale, checkbox e visualizzazione come chip rimuovibili, se è vuoto vengono mostrate tutte le diagnosi.
+Inoltre, i filtri selezionati vengono salvati automaticamente e rispristinati all'avvio della pagina.
+## Grafico e legenda
+Come grafico è stato implementato un istogramma a pila, dove:
+* sulle ascisse sono mostrati i dodici mesi dell'anno;
+* sulle ordinate il numero medio di letti occupati, cumulati per reparto/diagnosi;
+* ogni reparto ha una colorazione diversa, sfruttando la sfumatura per ogni anno;
+* le diagnosi successive alla prima usano bordi trattegiati per distinguersi visivamente.
+Inoltre, cliccando su una barra, viene mostrato un alert con i dettagli completi per quel mese.<br>
+Infine, come legenda viene mostrata una tabella heatmap, sfruttando una sequential colormap, mostrando per ogni coppia (reparto, diagnosi) il numero totale dei ricoveri per quel anno.
+## Struttura del progetto
+progetto_visualizzazione/
+├── node_modules/             # Librerie importate
+├── index.js                  # Server Express + preprocessing
+├── worker/
+│   └── worker.js             # Worker Thread per le query
+├── public/
+│   ├── index.html            # Interfaccia utente
+│   ├── js/
+│   │   ├── app.js            # Logica frontend
+│   │   └── spinner.js        # Indicatore di caricamento
+│   ├── css/
+│   │   └── style.css
+│   ├── data/
+│   │   ├── dataset.csv       # Dataset clinico principale
+│   │   └── reparti.csv       # Elenco reparti
+│   └── temp/                 # File JSON generati a runtime (gitignored)
+└── package.json
+Per avviare il progetto, basta posizionarsi sulla cartella del progetto, e digitare da terminale il comando<br>
+<center>`node index.js`<\center><br> 
+ed una volta fatto ciò, viene effettuato il preprocessing offline e quando verrà mostrato `Server in ascolto su http://localhost:8090`.
+
 
 
 
