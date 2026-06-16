@@ -15,7 +15,7 @@ Di seguito, sono riportate i primi 13 record, per comprendere il funzionamento d
 ![dataset](immagini/dataset.png)
 In particolare, ad ogni ingresso per reparto gli viene identificativo un numero posto letto progressivo con tipo IN, mentre ad ogni uscita viene preso l'identificativo  con tipo OUT, così quel posto letto può essere assegnato nuovamente ad un nuovo paziente. Poi, per ogni giorno e reparto, vengono presi i record a cui: 
 * gli viene sommato 1 se il tipo è IN, 
-* sottratto 1 se il tipo è OUT;
+* sottratto 1 se il tipo è OUT;<br>
 ottenendo così il numero di posti letto occupati per quel giorno. Infine, per il mese di riferimento, si sommano tutti questi valori ottenuti e si divide per il numero di giorni di quel mese (es. gennaio 31, febbraio 28/29, ecc.), calcolando il numero di posti letto medi occupati per quel mese.<br>
 Infine, sono state implementate delle API REST, per restituire il risultato delle interrogazioni.
 | Link | Descrizione |
@@ -27,14 +27,14 @@ Infine, sono state implementate delle API REST, per restituire il risultato dell
 Come già accennato, l'interfaccia permette tre tipologie di filtri:
 * intervallo degli anni, che accetta solo campi numerici a 4 cifre, implementando delle espressioni regolari, ed è un campo obbligatorio;
 * reparti, che sono delle checkbox caricate dall'API, se è vuoto vengono selezionati tutti;
-* diagnosi, con ricerca testuale, checkbox e visualizzazione come chip rimuovibili, se è vuoto vengono mostrate tutte le diagnosi.
+* diagnosi, con ricerca testuale, checkbox e visualizzazione come chip rimuovibili, se è vuoto vengono mostrate tutte le diagnosi.<br>
 Inoltre, i filtri selezionati vengono salvati automaticamente e ripristinati all'avvio della pagina.
 ## Grafico e legenda
 Come grafico è stato implementato un istogramma a pila, dove:
 * sulle ascisse sono mostrati i dodici mesi dell'anno;
 * sulle ordinate il numero medio di letti occupati, cumulati per reparto/diagnosi;
 * ogni reparto ha una colorazione diversa, sfruttando la sfumatura per ogni anno;
-* le diagnosi successive alla prima usano bordi tratteggiati per distinguersi visivamente.
+* le diagnosi successive alla prima usano bordi tratteggiati per distinguersi visivamente.<br>
 Inoltre, cliccando su una barra, viene mostrato un alert con i dettagli completi per quel mese.<br>
 Infine, come legenda viene mostrata una tabella heatmap, sfruttando una sequential colormap, mostrando per ogni coppia (reparto, diagnosi) il numero totale dei ricoveri per quel anno.
 ## Struttura del progetto
