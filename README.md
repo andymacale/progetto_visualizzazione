@@ -9,8 +9,17 @@ I linguaggi utilizzati sono i seguenti:
 * per il frontend, HTML + CSS e Javascript;
 * per la visualizzazione, la libreria Chart.js;
 * per la base di dati, due file `.csv`.
-## Architettura
-All'avvio, siccome la quantità di dati è enorme, è stato scelto un preprocessing offline, che legge `dataset.csv` ed elabora un file `.json` temporaneo, che calcola i posti medi ed il numero di ricoveri. Di seguito, sono riportate i primi 13 record, per comprendere il funzionamento dell'algoritmo.
+## Gestione dei dati
+All'avvio, siccome la quantità di dati è enorme, è stato scelto un preprocessing offline, che legge `dataset.csv` ed elabora un file `.json` temporaneo, che calcola i posti medi ed il numero di ricoveri. Poi è stato implementato un worker che carica il file temporaneo in memoria centrale, per evitare rallementi eccessivi durante la fase di filtraggio.<br>
+Di seguito, sono riportate i primi 13 record, per comprendere il funzionamento dell'algoritmo.
 ![dataset](immagini/dataset.png)
-In particolare, ogni ingresso per reparto gli viene identificativo un numero posto letto progressivo con tipo IN, mentre ad ogni uscita viene preso l'identificativo  con tipo OUT, così quel posto letto può essere riutilizzato per un nuovo paziente. Poi per ogni giorno e reparto, vengono presi i record a cui gli viene sommato 1 se il tipo è IN, sottratto 1 se il tipo è OUT, ottenendo così il numero di posti letto occupati per quel giorno. Infine, per il mese di riferimento, si sommano tutti questi valori ottenuti e si divide per il numero di giorni di quel mese (es. gennaio 31, febbraio 28/29, ecc.), calcolando il numero di posti letto medi occupati per quel mese.
+In particolare, ogni ingresso per reparto gli viene identificativo un numero posto letto progressivo con tipo IN, mentre ad ogni uscita viene preso l'identificativo  con tipo OUT, così quel posto letto può essere riutilizzato per un nuovo paziente. Poi per ogni giorno e reparto, vengono presi i record a cui gli viene sommato 1 se il tipo è IN, sottratto 1 se il tipo è OUT, ottenendo così il numero di posti letto occupati per quel giorno. Infine, per il mese di riferimento, si sommano tutti questi valori ottenuti e si divide per il numero di giorni di quel mese (es. gennaio 31, febbraio 28/29, ecc.), calcolando il numero di posti letto medi occupati per quel mese.<br>
+Infine, sono state implementate delle API REST, per restituire il risultato delle interrogazioni.
+| Link | Descrizione |
+| :--- | :--- |
+| `/api/reparti` | Restituisce l'elenco dei reparti da `reparti.csv`|
+| `/api/diagnosi?q=` | Ricerca delle diagnosi |
+| `/api/analisi-stagionale` | Dati filtrati per anno (obbligatorio), reparto e/o diagnosi |
+
+
 
