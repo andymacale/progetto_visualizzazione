@@ -16,9 +16,11 @@ Di seguito, sono riportate i primi 13 record, per comprendere il funzionamento d
 ![dataset](immagini/dataset.png)
 In particolare, ad ogni ingresso per reparto gli viene identificativo un numero posto letto progressivo con tipo IN, mentre ad ogni uscita viene preso l'identificativo  con tipo OUT, così quel posto letto può essere assegnato nuovamente ad un nuovo paziente. Poi, per ogni giorno e reparto, vengono presi i record a cui: 
 * gli viene sommato 1 se il tipo è IN, 
-* sottratto 1 se il tipo è OUT;<br>
+* sottratto 1 se il tipo è OUT;
+
 ottenendo così il numero di posti letto occupati per quel giorno. Infine, per il mese di riferimento, si sommano tutti questi valori ottenuti e si divide per il numero di giorni di quel mese (es. gennaio 31, febbraio 28/29, ecc.), calcolando il numero di posti letto medi occupati per quel mese.<br>
 Infine, sono state implementate delle API REST, per restituire il risultato delle interrogazioni.
+
 | Link | Descrizione |
 | :--- | :--- |
 | `/api/reparti` | Restituisce l'elenco dei reparti da `reparti.csv`|
